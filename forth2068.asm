@@ -1,12 +1,10 @@
-/*
-notes about the TS2068
+; notes about the TS2068
 
-48K of RAM
-24K of ROM
-Color
-Sound: AY-3-8912
-twin joystick ports
-*/
+; 48K of RAM
+; 24K of ROM
+; Color
+; Sound: AY-3-8912
+; twin joystick ports
 
 CodeOrg equ $6000
 CodeLen equ $2000
@@ -24,16 +22,16 @@ SpectrumSetBorder       equ $229b
 SpectrumLastKey         equ $5c08
 SpectrumScreenColour    equ $5c8d
 
-/*
-notes on this forth
+; notes on this forth
 
-link ptr: 2 bytes
-lenflags: 1 byte (len up to 0x1f)
-name: N bytes
-definition: N bytes
+; link ptr: 2 bytes
+; lenflags: 1 byte (len up to 0x1f)
+; name: N bytes
+; code pointer: 2 bytes (or N bytes if defined in asm)
+; definition: N bytes
 
-sp is the normal stack
-*/
+; sp is the normal stack
+; ix is the current instruction pointer
 
 FORTHVER        equ 0
 F_IMMED         equ 0x80
@@ -929,7 +927,7 @@ _ZBRAN  pop af
 
 ; LITSTRING ( -- adr len )
 pLITSTR defCODE("LITSTRING",pZBRAN)
-_LITSTR jNEXT() /* todo */
+_LITSTR jNEXT() ; todo
 
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
@@ -1061,25 +1059,21 @@ hello_msg db "FORTH2068 v"
 hello_msg2 db " ok",NL
 hello_msg3 equ .
 
-/*
-0 SETBORDER 7 SETCOLOUR CLS
-." FORTH28 v" VERSION . ." ok" QUIT
-*/
 cold_start:
         dw _LIT-2, 0
-        dw _SETBOR-2
+        dw _SETBOR-2    ; 0 SETBORDER
         dw _LIT-2, 7
-        dw _SETCOL-2
-        dw _CLS-2
+        dw _SETCOL-2    ; 7 SETCOLOUR
+        dw _CLS-2       ; CLS
         dw _LIT-2, hello_msg
         dw _LIT-2, hello_msg2-hello_msg
-        dw _TELL-2
+        dw _TELL-2      ; .( FORTH2068 v)
         dw _VER-2
-        dw _NUMSH-2
+        dw _NUMSH-2     ; VERSION .
         dw _LIT-2, hello_msg2
         dw _LIT-2, hello_msg3-hello_msg2
-        dw _TELL-2
-        dw cQUIT
+        dw _TELL-2      ; .(  ok)
+        dw cQUIT        ; QUIT
 
 last_word equ pCLS
 end_of_builtins dw 0
