@@ -1093,4 +1093,4 @@ cold_start:
         dw cQUIT        ; QUIT
 
 last_word equ pCLS
-end_of_builtins dw 0
+end_of_builtins equ .
