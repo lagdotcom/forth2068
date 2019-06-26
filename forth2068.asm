@@ -829,7 +829,7 @@ do_tcfa:
         ret
 
 ; >DFA ( x -- x )
-pTDFA   defWORD(">CFA",pTCFA)
+pTDFA   defWORD(">DFA",pTCFA)
 cTDFA   dw Colon
         dw _TCFA-2
         dw _CELLP-2
