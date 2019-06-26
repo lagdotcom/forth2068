@@ -131,7 +131,11 @@ Colon   ld bc,ix
 rstack dw rstack_top
 interp_lit db 0
 parse_error db "PARSE ERROR",NL
-parse_error2 equ .
+parse_error_len equ . - parse_error
+hello_msg db "FORTH2068 v"
+hello_msg_len equ . - hello_msg
+ok_msg db " ok",NL
+ok_msg_len equ . - ok_msg
 var_STATE dw 0
 var_HERE dw end_of_builtins
 var_LATEST dw last_word
@@ -1035,7 +1039,7 @@ _do_lit:
 _error:
         ; WARN: spectrum function
         ld de,parse_error
-        ld bc,parse_error2 - parse_error
+        ld bc,parse_error_len
         call SpectrumShowString
         jNEXT()
 
@@ -1072,10 +1076,6 @@ pCLS    defCODE("CLS",pSETBOR)
 _CLS    call SpectrumClearScreen
         jNEXT()
 
-hello_msg db "FORTH2068 v"
-hello_msg2 db " ok",NL
-hello_msg3 equ .
-
 cold_start:
         dw _LIT-2, 0
         dw _SETBOR-2    ; 0 SETBORDER
@@ -1083,12 +1083,12 @@ cold_start:
         dw _SETCOL-2    ; 7 SETCOLOUR
         dw _CLS-2       ; CLS
         dw _LIT-2, hello_msg
-        dw _LIT-2, hello_msg2-hello_msg
+        dw _LIT-2, hello_msg_len
         dw _TELL-2      ; .( FORTH2068 v)
         dw _VER-2
         dw _NUMSH-2     ; VERSION .
-        dw _LIT-2, hello_msg2
-        dw _LIT-2, hello_msg3-hello_msg2
+        dw _LIT-2, ok_msg
+        dw _LIT-2, ok_msg_len
         dw _TELL-2      ; .(  ok)
         dw cQUIT        ; QUIT
 
