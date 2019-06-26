@@ -1052,9 +1052,37 @@ _NUMSH  pop bc
         call SpectrumShowNumber
         jNEXT()
 
+; WARN: uses spectrum internal function
+;   not checked on TS2068
+; WORDS ( -- )
+pWORDS  defCODE("WORDS",pNUMSH)
+_WORDS  ld hl,(var_LATEST)
+_wloop: push hl
+        inc hl
+        inc hl  ; skip link for now
+        ld b,0
+        ld a,(hl)
+        and F_LENMASK
+        ld c,a
+        inc hl
+        ld de,hl
+        call SpectrumShowString ; print it out
+        pop hl
+        ld e,(hl)
+        ld a,e
+        inc hl
+        ld d,(hl)
+        or d
+        jr z,_wexit
+        ld hl,de
+        ld a,' '
+        rst $10 ; SPECTRUM
+        jr _wloop
+_wexit: jNEXT()
+
 ; WARN: not checked on TS2068
 ; SETCOLOUR ( x -- )
-pSETCOL defCODE("COLOUR",pNUMSH)
+pSETCOL defCODE("COLOUR",pWORDS)
 _SETCOL pop bc
         ld a,c
         ld (SpectrumScreenColour),a
