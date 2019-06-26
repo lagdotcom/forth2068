@@ -338,19 +338,51 @@ _NEQx   push de
 
 ; < ( x1 x2 -- x1<x2 )
 pLT     defCODE("<",pNEQ)
-_LT     jNEXT() ; TODO
+_LT     pop bc
+        pop hl
+        ld de,0
+        or a ; clear carry
+        sbc hl,bc
+        jr nc,_LTx
+        dec de ; -1 = true
+_LTx    push de
+        jNEXT()
 
 ; > ( x1 x2 -- x1>x2 )
 pGT     defCODE(">",pLT)
-_GT     jNEXT() ; TODO
+_GT     pop hl
+        pop bc
+        ld de,0
+        or a ; clear carry
+        sbc hl,bc
+        jr nc,_GTx
+        dec de ; -1 = true
+_GTx    push de
+        jNEXT()
 
 ; <= ( x1 x2 -- x1<=x2 )
 pLTE    defCODE("<=",pGT)
-_LTE    jNEXT() ; TODO
+_LTE    pop hl
+        pop bc
+        ld de,0
+        or a ; clear carry
+        sbc hl,bc
+        jr c,_LTEx
+        dec de ; -1 = true
+_LTEx   push de
+        jNEXT()
 
 ; >= ( x1 x2 -- x1>=x2 )
 pGTE    defCODE(">=",pLTE)
-_GTE    jNEXT() ; TODO
+_GTE    pop bc
+        pop hl
+        ld de,0
+        or a ; clear carry
+        sbc hl,bc
+        jr c,_GTEx
+        dec de ; -1 = true
+_GTEx   push de
+        jNEXT()
 
 ; 0= ( x -- flag )
 pZEQ    defCODE("0=",pGTE)
