@@ -22,6 +22,9 @@ SpectrumSetBorder       equ $229b
 SpectrumLastKey         equ $5c08
 SpectrumScreenColour    equ $5c8d
 
+BS              equ 12
+NL              equ 13
+
 ; notes on this forth
 
 ; link ptr: 2 bytes
@@ -40,8 +43,6 @@ F_LENMASK       equ 0x1f
 
 stack_top       equ 0xE000
 rstack_top      equ 0xF000
-
-NL              equ 13
 
 jNEXT   macro()
         jp Next
@@ -106,7 +107,7 @@ lods    macro()
 mend
 
 ; ok, let's get started!
-org $6000
+org CodeOrg
 Start:  ;di
         ld hl,(var_S0)
         ld sp,hl
@@ -129,7 +130,6 @@ Colon   ld bc,ix
 
 rstack dw rstack_top
 interp_lit db 0
-word_buffer dw 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 parse_error db "PARSE ERROR",NL
 parse_error2 equ .
 var_STATE dw 0
@@ -138,6 +138,10 @@ var_LATEST dw last_word
 var_BASE dw 10
 var_S0 dw stack_top
 var_ECHO dw 0
+
+; this means that the start of the buffer will be 00 when in a 16-bit reg
+align $100
+word_buffer dw 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 ; DROP ( x -- )
 pDROP   defCODE("DROP",0)
@@ -591,6 +595,8 @@ _gk_l   ld a,(hl)
         or l
         ld a,b
         jr z,_gk_x
+        ; todo: avoid nonprintables?
+        ; todo: backspace???
         rst $10 ; SPECTRUM!
         ld a,b
         pop bc
@@ -608,23 +614,34 @@ do_word:
         jr z,_skip_comment
         cp ' '
         jr z,do_word
+        cp BS
+        jr z,do_word
+        cp NL
+        jr z,do_word
         ld de,word_buffer
 _main:
         ld (de),a
         inc de
         call do_key
+        cp BS
+        jr z,_bs
         cp ' '+1
         jr nc,_main
         ld hl,word_buffer
         or a; ccf
         ex de,hl
         sbc hl,de       ; hl = length
+        jr z,do_word    ; got nothing? do it again
         ret
 _skip_comment:
         call do_key
         cp NL
         jr nz,_skip_comment
         jr do_word
+_bs:
+        dec de
+        jr z,do_word    ; this only works because word_buffer is XX00
+        jr _main
 
 ; NUMBER ( adr len -- x result )
 pNUMBER defCODE("NUMBER",pWORD)
