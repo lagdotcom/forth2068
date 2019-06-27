@@ -186,7 +186,7 @@ _ROT    pop af
         push de
         jNEXT()
 
-; -ROT ( x1 x2 x3 -- x1 x3 x2 )
+; -ROT ( x1 x2 x3 -- x3 x1 x2 )
 pNROT   defCODE("-ROT",pROT)
 _NROT   pop af
         pop bc
@@ -396,7 +396,7 @@ _ZEQx   push de
         jNEXT()
 
 ; 0<> ( x -- flag )
-pZNEQ   defCODE("0=",pZEQ)
+pZNEQ   defCODE("0<>",pZEQ)
 _ZNEQ   pop hl
         ld de,0
         ld a,h
@@ -443,7 +443,7 @@ _INVERT pop bc
         ld a,c
         cpl
         ld c,a
-        push bc
+        push bc ; TODO: is this even right haha
         jNEXT()
 
 pEXIT   defCODE("EXIT",pINVERT)
@@ -860,15 +860,15 @@ do_tcfa:
         add hl,bc       ; skip name
         ret
 
-; >DFA ( x -- x )
-pTDFA   defWORD(">DFA",pTCFA)
-cTDFA   dw Colon
+; >BODY ( x -- x )
+pTBODY  defWORD(">BODY",pTCFA)
+cTBODY  dw Colon
         dw _TCFA-2
         dw _CELLP-2
         dw _EXIT-2
 
 ; CREATE ( adr len -- )
-pCREATE defCODE("CREATE",pTDFA)
+pCREATE defCODE("CREATE",pTBODY)
 _CREATE ld de,(var_HERE)        ; de = HERE
         push de
         ld hl,var_LATEST        ; hl = LATEST
@@ -984,15 +984,15 @@ _LITSTR jNEXT() ; todo
 
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
-; TELL ( adr len -- )
-pTELL   defCODE("TELL",pLITSTR)
-_TELL   pop bc
+; TYPE ( adr len -- )
+pTYPE   defCODE("TYPE",pLITSTR)
+_TYPE   pop bc
         pop de
         call SpectrumShowString
         jNEXT()
 
 ; QUIT ( -- )
-pQUIT   defWORD("QUIT",pTELL)
+pQUIT   defWORD("QUIT",pTYPE)
 cQUIT   dw Colon
         dw _R0-2, _RSPSTO-2             ; R0 RSP!
         dw _ECHO-2, _LIT-2, 1, _STORE-2 ; ECHO 1 !
@@ -1112,9 +1112,14 @@ _wloop: push hl
         jr _wloop
 _wexit: jNEXT()
 
+pRAND   defCODE("RAND",pWORDS)
+_RAND   ld a,r
+        push af ; pretty random :)
+        jNEXT()
+
 ; WARN: not checked on TS2068
 ; SETCOLOUR ( x -- )
-pSETCOL defCODE("COLOUR",pWORDS)
+pSETCOL defCODE("COLOUR",pRAND)
 _SETCOL pop bc
         ld a,c
         ld (SpectrumScreenColour),a
@@ -1144,12 +1149,12 @@ cold_start:
         dw _CLS-2       ; CLS
         dw _LIT-2, hello_msg
         dw _LIT-2, hello_msg_len
-        dw _TELL-2      ; .( FORTH2068 v)
+        dw _TYPE-2      ; .( FORTH2068 v)
         dw _VER-2
         dw _NUMSH-2     ; VERSION .
         dw _LIT-2, ok_msg
         dw _LIT-2, ok_msg_len
-        dw _TELL-2      ; .(  ok)
+        dw _TYPE-2      ; .(  ok)
         dw cQUIT        ; QUIT
 
 last_word equ pCLS
