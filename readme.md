@@ -5,6 +5,7 @@ It's forth, but running on a TS2068! Except it only supports the Spectrum right 
 ## Word implementation
 
 Y? means it's a Spectrum-specific implementation, so it needs replacing.
+Y! means it's implemented but not to specification.
 N\* means it's not implemented but is trivial to add in FORTH alone.
 
 | Word        | ?   | Set      | Stack Effect                     | Comment                                       |
@@ -38,7 +39,7 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `0=`        | Y   | CORE     | n -- flag                        |                                               |
 | `0>`        | N\* | CORE-EXT | n -- flag                        | `0 >`                                         |
 | `0>=`       | N\* |          | n -- flag                        | `0 >=`                                        |
-| `0BRANCH`   | Y   |          | --                               |                                               |
+| `0BRANCH`   | Y   |          | ...                              |                                               |
 | `1+`        | Y   | CORE     | x -- x+1                         |                                               |
 | `1-`        | Y   | CORE     | x -- x-1                         |                                               |
 | `2!`        | N\* | CORE     | x1 x2 a-addr --                  | `SWAP OVER ! CELL+ !`                         |
@@ -71,20 +72,20 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `?DO`       | N   | CORE-EXT | x1 x2 --                         | like DO, but if `x1=x2` then skip             |
 | `?DUP`      | Y   | CORE     | x -- 0 \| x x                    |                                               |
 | `@`         | Y   | CORE     | a-addr -- x                      |                                               |
-| `AND`       | N   | CORE     | --                               |                                               |
-| `BASE`      | Y   | CORE     | --                               |                                               |
+| `AND`       | Y   | CORE     | x1 x2 -- x1&x2                   |                                               |
+| `BASE`      | Y   | CORE     | -- a-addr                        |                                               |
 | `BORDER`    | Y?  |          | n --                             | set border colour                             |
-| `BRANCH`    | Y   |          | --                               |                                               |
-| `C!`        | Y   | CORE     | --                               |                                               |
-| `C@`        | Y   | CORE     | --                               |                                               |
-| `C@C!`      | N   |          | --                               |                                               |
-| `CELL+`     | Y   | CORE     | --                               |                                               |
-| `CELL-`     | Y   |          | --                               |                                               |
-| `CHAR`      | N   | CORE     | --                               |                                               |
+| `BRANCH`    | Y   |          | ...                              |                                               |
+| `C!`        | Y   | CORE     | char c-addr --                   |                                               |
+| `C@`        | Y   | CORE     | c-addr -- char                   |                                               |
+| `C@C!`      | N   |          | src dst -- src+1 dst+1           |                                               |
+| `CELL+`     | Y   | CORE     | a-addr -- a-addr+2               | `2 +`                                         |
+| `CELL-`     | Y   |          | a-addr -- a-addr-2               | `2 -`                                         |
+| `CHAR`      | N   | CORE     | "<spaces\>name" -- char          |                                               |
 | `CLS`       | Y?  |          | --                               | clears the screen                             |
-| `CMOVE`     | N   | STRING   | --                               |                                               |
+| `CMOVE`     | N   | STRING   | dst src len --                   |                                               |
 | `COLOUR`    | Y?  |          | n --                             | set text/bg colour                            |
-| `CREATE`    | Y   | CORE     | --                               |                                               |
+| `CREATE`    | Y   | CORE     | "<spaces\>name" --               |                                               |
 | `DOCOL`     | Y   |          | -- a-addr                        | address of `:` runtime routine                |
 | `DROP`      | Y   | CORE     | x --                             |                                               |
 | `DSP!`      | Y   |          | a-addr --                        | set data stack address                        |
@@ -93,28 +94,28 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `ECHO`      | Y   |          | -- a-addr                        | set keyboard echo                             |
 | `EMIT`      | Y   | CORE     | x --                             | print char                                    |
 | `EXECUTE`   | Y   | CORE     | xt --                            |                                               |
-| `EXIT`      | Y   | CORE     | --                               |                                               |
+| `EXIT`      | Y   | CORE     | R: nest-sys --                   |                                               |
 | `F_HIDDEN`  | Y   |          | -- x                             | hidden flag                                   |
 | `F_IMMED`   | Y   |          | -- x                             | immediate flag                                |
 | `F_LENMASK` | Y   |          | -- x                             | bitmask for word length byte                  |
-| `FIND`      | Y   | CORE     | --                               |                                               |
-| `HERE`      | Y   | CORE     | --                               |                                               |
-| `HIDDEN`    | Y   |          | --                               |                                               |
-| `HIDE`      | Y   |          | --                               |                                               |
-| `IMMEDIATE` | Y   | CORE     | --                               |                                               |
-| `INTERPRET` | Y?  |          | --                               |                                               |
+| `FIND`      | Y!  | CORE     | adr len -- xt \| 0               |                                               |
+| `HERE`      | Y   | CORE     | -- adr                           |                                               |
+| `HIDDEN`    | Y   |          | adr --                           | hides word                                    |
+| `HIDE`      | Y   |          | "<spaces\>name" --               | hides word                                    |
+| `IMMEDIATE` | Y   | CORE     | --                               | latest word becomes immediate                 |
+| `INTERPRET` | Y?  |          | --                               | starts interpreter loop                       |
 | `INVERT`    | Y   | CORE     | x -- ~x                          |                                               |
 | `KEY`       | Y?  | CORE     | -- x                             |                                               |
-| `LATEST`    | Y   |          | --                               |                                               |
-| `LIT`       | Y   |          | --                               |                                               |
-| `LITSTRING` | N   |          | --                               |                                               |
-| `MOD`       | N\* | CORE     | --                               | `/MOD DROP`                                   |
+| `LATEST`    | Y   |          | -- adr                           |                                               |
+| `LIT`       | Y   |          | ...                              |                                               |
+| `LITSTRING` | N   |          | ...                              |                                               |
+| `MOD`       | N\* | CORE     | x1 x2 -- x1%x2                   | `/MOD DROP`                                   |
 | `NUMBER`    | Y   |          | --                               |                                               |
-| `OR`        | N   | CORE     | --                               |                                               |
-| `OVER`      | Y   | CORE     | --                               |                                               |
-| `QUIT`      | Y   | CORE     | --                               |                                               |
+| `OR`        | Y   | CORE     | x1 x2 -- x1\|x2                  |                                               |
+| `OVER`      | Y   | CORE     | x1 x2 -- x1 x2 x1                |                                               |
+| `QUIT`      | Y   | CORE     | R: i\*x --                       | set up for `INTERPRET` then call it           |
 | `R0`        | Y   |          | -- a-addr                        | get return stack base                         |
-| `R>`        | Y   | CORE     | --                               |                                               |
+| `R>`        | Y   | CORE     | -- x R: x --                     |                                               |
 | `RAND`      | Y   |          | -- x                             | random number generator                       |
 | `RDROP`     | Y   |          | R: x --                          | `DROP` for the return stack                   |
 | `ROT`       | Y   | CORE     | x1 x2 x3 -- x2 x3 x1             |                                               |
@@ -122,13 +123,13 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `RSP@`      | Y   |          | -- a-addr                        | get return stack address                      |
 | `S0`        | Y   |          | -- a-addr                        | get data stack base                           |
 | `SPACE`     | Y   | CORE     | --                               | `BL EMIT`                                     |
-| `STATE`     | Y   | CORE     | --                               |                                               |
+| `STATE`     | Y   | CORE     | -- addr                          |                                               |
 | `SWAP`      | Y   | CORE     | x1 x2 -- x2 x1                   |                                               |
-| `TYPE`      | Y?  | CORE     | --                               |                                               |
+| `TYPE`      | Y?  | CORE     | adr len --                       |                                               |
 | `VERSION`   | Y   |          | -- x                             | get Forth2068 version                         |
-| `WORD`      | Y   | CORE     | --                               |                                               |
+| `WORD`      | Y!  | CORE     | "<spaces\>name" -- adr len       |                                               |
 | `WORDS`     | Y?  | TOOLS    | --                               | show implemented words                        |
-| `XOR`       | N   | CORE     | --                               |                                               |
+| `XOR`       | Y   | CORE     | x1 x2 -- x1^x2                   |                                               |
 | `[`         | Y   | CORE     | --                               | `0 STATE !`                                   |
 | `]`         | Y   | CORE     | --                               | `1 STATE !`                                   |
 

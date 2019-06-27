@@ -973,6 +973,7 @@ _HIDDEN pop hl
         ld (hl),a
         jNEXT()
 
+; HIDE ( "<spaces>name" -- )
 defWORD("HIDE")
 cHIDE   dw Colon
         dw _WORD-2
