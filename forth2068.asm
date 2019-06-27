@@ -137,6 +137,8 @@ parse_error db "PARSE ERROR",chNL
 parse_error_len equ . - parse_error
 hello_msg db "FORTH2068 v"
 hello_msg_len equ . - hello_msg
+bytes_msg db "B used;"
+bytes_msg_len equ . - bytes_msg
 ok_msg db " ok",chNL
 ok_msg_len equ . - ok_msg
 var_STATE dw 0
@@ -409,6 +411,45 @@ _ZNEQ   pop hl
 _ZNEQx  push de
         jNEXT()
 
+; AND ( x1 x2 -- x1&x2 )
+defCODE("AND")
+_AND    pop bc
+        pop de
+        ld a,b
+        and d
+        ld d,a
+        ld a,c
+        and e
+        ld e,a
+        push de
+        jNEXT()
+
+; OR ( x1 x2 -- x1|x2 )
+defCODE("OR")
+_OR     pop bc
+        pop de
+        ld a,b
+        or d
+        ld d,a
+        ld a,c
+        or e
+        ld e,a
+        push de
+        jNEXT()
+
+; XOR ( x1 x2 -- x1^x2 )
+defCODE("XOR")
+_XOR    pop bc
+        pop de
+        ld a,b
+        xor d
+        ld d,a
+        ld a,c
+        xor e
+        ld e,a
+        push de
+        jNEXT()
+
 ; INVERT ( x -- ~x )
 defCODE("INVERT")
 _INVERT pop bc
@@ -585,8 +626,13 @@ _DSPSTO pop hl
 defCODE("EMIT")
 _EMIT   pop bc
         ld a,c
-        rst $10 ; SPECTRUM!
+_EMITa  rst $10 ; SPECTRUM!
         jNEXT()
+
+; SPACE ( -- )
+defCODE("SPACE")
+_SPACE  ld a,' '
+        jr _EMITa
 
 ; WARN: uses spectrum internals
 ;   not checked on TS2068
@@ -1137,6 +1183,12 @@ cold_start:
         dw _TYPE-2      ; .( FORTH2068 v)
         dw _VER-2
         dw _NUMSH-2     ; VERSION .
+        dw _SPACE-2     ; SPACE
+        dw _LIT-2, end_of_builtins-CodeOrg
+        dw _NUMSH-2     ; HERE &6000 - .
+        dw _LIT-2, bytes_msg
+        dw _LIT-2, bytes_msg_len
+        dw _TYPE-2      ; .( bytes used;)
         dw _LIT-2, ok_msg
         dw _LIT-2, ok_msg_len
         dw _TYPE-2      ; .(  ok)
