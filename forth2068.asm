@@ -612,8 +612,17 @@ _DSPSTO pop hl
 
 ; WARN: uses spectrum internals
 ;   not checked on TS2068
+; EMIT ( x -- )
+pEMIT   defCODE("EMIT",pDSPSTO)
+_EMIT   pop bc
+        ld a,c
+        rst $10 ; SPECTRUM!
+        jNEXT()
+
+; WARN: uses spectrum internals
+;   not checked on TS2068
 ; KEY ( -- x )
-pKEY    defCODE("KEY",pDSPSTO)
+pKEY    defCODE("KEY",pEMIT)
 _KEY    call do_key
         push af
         jNEXT()
