@@ -418,7 +418,7 @@ _INVERT pop bc
         ld a,c
         cpl
         ld c,a
-        push bc ; TODO: is this even right haha
+        push bc
         jNEXT()
 
 ; EXIT ( R: return-addr -- )
