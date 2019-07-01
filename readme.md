@@ -74,6 +74,7 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `@`         | Y   | CORE     | a-addr -- x                      |                                               |
 | `AND`       | Y   | CORE     | x1 x2 -- x1&x2                   |                                               |
 | `BASE`      | Y   | CORE     | -- a-addr                        |                                               |
+| `BL`        | Y   | CORE     | -- x                             | get space character code                      |
 | `BORDER`    | Y?  |          | n --                             | set border colour                             |
 | `BRANCH`    | Y   |          | ...                              |                                               |
 | `C!`        | Y   | CORE     | char c-addr --                   |                                               |
@@ -81,10 +82,11 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `C@C!`      | N   |          | src dst -- src+1 dst+1           |                                               |
 | `CELL+`     | Y   | CORE     | a-addr -- a-addr+2               | `2 +`                                         |
 | `CELL-`     | Y   |          | a-addr -- a-addr-2               | `2 -`                                         |
-| `CHAR`      | N   | CORE     | "<spaces\>name" -- char          |                                               |
+| `CHAR`      | N\* | CORE     | "<spaces\>name" -- char          | `WORD DROP C@`                                |
 | `CLS`       | Y?  |          | --                               | clears the screen                             |
 | `CMOVE`     | N   | STRING   | dst src len --                   |                                               |
 | `COLOUR`    | Y?  |          | n --                             | set text/bg colour                            |
+| `CONSTANT`  | N   | CORE     | x "<spaces\>name" --             | declare named constant                        |
 | `CREATE`    | Y   | CORE     | "<spaces\>name" --               |                                               |
 | `DOCOL`     | Y   |          | -- a-addr                        | address of `:` runtime routine                |
 | `DROP`      | Y   | CORE     | x --                             |                                               |
@@ -126,6 +128,7 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `STATE`     | Y   | CORE     | -- addr                          |                                               |
 | `SWAP`      | Y   | CORE     | x1 x2 -- x2 x1                   |                                               |
 | `TYPE`      | Y?  | CORE     | adr len --                       |                                               |
+| `VARIABLE`  | N   | CORE     | "<spaces\>name" --               | declare named memory address                  |
 | `VERSION`   | Y   |          | -- x                             | get Forth2068 version                         |
 | `WORD`      | Y!  | CORE     | "<spaces\>name" -- adr len       |                                               |
 | `WORDS`     | Y?  | TOOLS    | --                               | show implemented words                        |

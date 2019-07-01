@@ -534,7 +534,7 @@ _CSTORE pop bc
 ; C@ ( adr -- x )
 defCODE("C@")
 _CFETCH pop hl
-        xor b
+        ld b,0
         ld c,(hl)
         push bc
         jNEXT()
@@ -565,6 +565,9 @@ _R0     pushAndGo(rstack_top)
 
 defCODE("DOCOL")
 _DOCOL  pushAndGo(Colon)
+
+defCODE("BL")
+_BL     pushAndGo(' ')
 
 defCODE("F_IMMED")
 _FIMM   pushAndGo(F_IMMED)
@@ -668,6 +671,10 @@ _WORD   call do_word
         push de
         push hl
         jNEXT()
+; gets the next word in the input stream
+; hl = length
+; de = word
+; trashes af
 do_word:
         call do_key
         cp '\'
