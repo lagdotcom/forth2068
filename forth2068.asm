@@ -301,14 +301,14 @@ _DIVMOD pop de          ; divisor in de
         ld a,b          ; dividend in ac
         ld hl,0
         ld b,16
-_DIVM_L:sli c
+_DIVM_L sli c
         rla
         adc hl,hl
         sbc hl,de
         jr nc,_DIVM_J
         add hl,de
         dec c
-_DIVM_J:djnz _DIVM_L
+_DIVM_J djnz _DIVM_L
         push hl         ; remainder
         ld b,a
         push bc         ; quotient
@@ -474,10 +474,10 @@ _LIT    lods()
         push hl
         jNEXT()
 
-; ! ( adr x -- )
+; ! ( x adr -- )
 defCODE("!")
-_STORE  pop bc
-        pop hl
+_STORE  pop hl
+        pop bc
         ld (hl),c
         inc hl
         ld (hl),b
@@ -492,10 +492,10 @@ _FETCH  pop hl
         push bc
         jNEXT()
 
-; +! ( adr x -- )
+; +! ( x adr -- )
 defCODE("+!")
-_ADDSTO pop bc
-        pop hl
+_ADDSTO pop hl
+        pop bc
         ld e,(hl)
         inc hl
         ld d,(hl)
@@ -537,6 +537,23 @@ _CFETCH pop hl
         ld b,0
         ld c,(hl)
         push bc
+        jNEXT()
+
+; C, ( x -- )
+defCODE("C,")
+_CCOMMA pop bc
+        ld hl,(var_HERE)
+        ld (hl),c
+        inc hl
+        ld (var_HERE),hl
+        jNEXT()
+
+; CMOVE ( src dst len -- )
+defCODE("CMOVE")
+_CMOVE  pop bc
+        pop de
+        pop hl
+        ldir
         jNEXT()
 
 defCODE("STATE")
@@ -587,6 +604,15 @@ _TOR    pop bc
 ; R> ( -- x ) ( R: x -- )
 defCODE("R>")
 _FROMR  popRSP(b,c)
+        push bc
+        jNEXT()
+
+; R@ ( -- x ) ( R: x -- x )
+defCODE("R@")
+_FETCHR ld hl,(rstack)
+        ld c,(hl)
+        inc hl
+        ld b,(hl)
         push bc
         jNEXT()
 
@@ -1023,7 +1049,7 @@ _TYPE   pop bc
 defWORD("QUIT")
 cQUIT   dw Colon
         dw _R0-2, _RSPSTO-2             ; R0 RSP!
-        dw _ECHO-2, _LIT-2, 1, _STORE-2 ; ECHO 1 !
+        dw _LIT-2, 1, _ECHO-2, _STORE-2 ; 1 ECHO !
         dw _INTERP-2                    ; DO INTERPRET
         dw _BRANCH-2, -6                ; LOOP
         ; don't need NEXT

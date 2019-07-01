@@ -78,13 +78,14 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `BORDER`    | Y?  |          | n --                             | set border colour                             |
 | `BRANCH`    | Y   |          | ...                              |                                               |
 | `C!`        | Y   | CORE     | char c-addr --                   |                                               |
+| `C,`        | Y   | CORE     | char --                          | compile a character                           |
 | `C@`        | Y   | CORE     | c-addr -- char                   |                                               |
 | `C@C!`      | N   |          | src dst -- src+1 dst+1           |                                               |
 | `CELL+`     | Y   | CORE     | a-addr -- a-addr+2               | `2 +`                                         |
 | `CELL-`     | Y   |          | a-addr -- a-addr-2               | `2 -`                                         |
 | `CHAR`      | N\* | CORE     | "<spaces\>name" -- char          | `WORD DROP C@`                                |
 | `CLS`       | Y?  |          | --                               | clears the screen                             |
-| `CMOVE`     | N   | STRING   | dst src len --                   |                                               |
+| `CMOVE`     | Y   | STRING   | src dst len --                   |                                               |
 | `COLOUR`    | Y?  |          | n --                             | set text/bg colour                            |
 | `CONSTANT`  | N   | CORE     | x "<spaces\>name" --             | declare named constant                        |
 | `CREATE`    | Y   | CORE     | "<spaces\>name" --               |                                               |
@@ -118,6 +119,7 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `QUIT`      | Y   | CORE     | R: i\*x --                       | set up for `INTERPRET` then call it           |
 | `R0`        | Y   |          | -- a-addr                        | get return stack base                         |
 | `R>`        | Y   | CORE     | -- x R: x --                     |                                               |
+| `R@`        | Y   | CORE     | -- x R: x -- x                   | copy top of return stack to stack             |
 | `RAND`      | Y   |          | -- x                             | random number generator                       |
 | `RDROP`     | Y   |          | R: x --                          | `DROP` for the return stack                   |
 | `ROT`       | Y   | CORE     | x1 x2 x3 -- x2 x3 x1             |                                               |
