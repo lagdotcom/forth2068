@@ -32,6 +32,8 @@ chAT            equ 22
 ; lenflags: 1 byte (len up to 0x1f)
 ; name: N bytes
 ; code pointer: 2 bytes (or N bytes if defined in asm)
+; data pointer: 2 bytes (or 0 bytes if asm/colon word)
+; data field: N bytes
 ; definition: N bytes
 
 ; sp is the normal stack
@@ -126,7 +128,7 @@ Next:
         ex de,hl
         jp (hl)
 
-Colon   ld bc,ix
+DOCOLON ld bc,ix
         pushRSP(b,c)
         ld ix,de
         jNEXT()
@@ -142,7 +144,7 @@ bytes_msg_len equ . - bytes_msg
 ok_msg db " ok",chNL
 ok_msg_len equ . - ok_msg
 var_STATE dw 0
-var_HERE dw end_of_builtins
+var_DP dw end_of_builtins
 var_LATEST dw last_word
 var_BASE dw 10
 var_S0 dw stack_top
@@ -542,10 +544,10 @@ _CFETCH pop hl
 ; C, ( x -- )
 defCODE("C,")
 _CCOMMA pop bc
-        ld hl,(var_HERE)
+        ld hl,(var_DP)
         ld (hl),c
         inc hl
-        ld (var_HERE),hl
+        ld (var_DP),hl
         jNEXT()
 
 ; CMOVE ( src dst len -- )
@@ -559,8 +561,13 @@ _CMOVE  pop bc
 defCODE("STATE")
 _STATE  pushAndGo(var_STATE)
 
-defCODE("HERE")
-_HERE   pushAndGo(var_HERE)
+defCODE("DP")
+_DP     pushAndGo(var_DP)
+
+defWORD("HERE")
+cHERE   dw DOCOLON
+        dw _DP-2, _FETCH-2      ; DP @
+        dw _EXIT-2
 
 defCODE("LATEST")
 _LATEST pushAndGo(var_LATEST)
@@ -581,7 +588,7 @@ defCODE("R0")
 _R0     pushAndGo(rstack_top)
 
 defCODE("DOCOL")
-_DOCOL  pushAndGo(Colon)
+_DOCOL  pushAndGo(DOCOLON)
 
 defCODE("BL")
 _BL     pushAndGo(' ')
@@ -919,14 +926,15 @@ do_tcfa:
 
 ; >BODY ( x -- x )
 defWORD(">BODY")
-cTBODY  dw Colon
+cTBODY  dw DOCOLON
         dw _TCFA-2
         dw _CELLP-2
         dw _EXIT-2
 
-; CREATE ( adr len -- )
-defCODE("CREATE")
-_CREATE ld de,(var_HERE)        ; de = HERE
+; HEADER, ( adr len -- )
+defCODE("HEADER,")
+_HEADERCOMMA:
+        ld de,(var_DP)          ; de = HERE
         push de
         ld hl,var_LATEST        ; hl = LATEST
         ldi                     ; (de++) = (hl++)
@@ -939,8 +947,28 @@ _CREATE ld de,(var_HERE)        ; de = HERE
         inc de
         pop hl
         ldir
-        ld (var_HERE),de
+        ld (var_DP),de
         jNEXT()
+
+; (CREATE) ( -- adr )
+defCODE("(CREATE)")
+DOCREATE:
+        ; at this point, DE is already pointing at the dfa!
+        ex de,hl
+        ld c,(hl)
+        inc hl
+        ld b,(hl)
+        push bc
+        jNEXT()
+
+; CREATE ( "<spaces>name" -- )
+defWORD("CREATE")
+cCREATE dw DOCOLON
+        dw _WORD-2                              ; WORD ( adr len -- )
+        dw _HEADERCOMMA-2                       ; HEADER ( -- )
+        dw _LIT-2, DOCREATE, _COMMA-2          ; POSTPONE (CREATE)     \ cfa
+        dw cHERE, _CELLP-2, _COMMA-2            ; HERE CELL+ ,          \ dfa
+        dw _EXIT-2
 
 ; , ( x -- )
 defCODE(",")
@@ -948,12 +976,12 @@ _COMMA  pop bc
         call do_comma
         jNEXT()
 do_comma:
-        ld hl,(var_HERE)
+        ld hl,(var_DP)
         ld (hl),c
         inc hl
         ld (hl),b
         inc hl
-        ld (var_HERE),hl
+        ld (var_DP),hl
         ret
 
 ; [ ( -- )
@@ -970,17 +998,17 @@ _RBRAC  ld a,1
 
 ; : ( C: "<spaces>name" -- )
 defWORD(":")
-cCOLON  dw Colon
+cCOLON  dw DOCOLON
         dw _WORD-2
-        dw _CREATE-2
-        dw _LIT-2, Colon, _COMMA-2
+        dw _HEADERCOMMA-2
+        dw _LIT-2, DOCOLON, _COMMA-2
         dw _LATEST-2, _FETCH-2, _HIDDEN-2
         dw _RBRAC-2
         dw _EXIT-2
 
 ; ; ( C: -- )
 defIMMWORD(";")
-cSEMIC  dw Colon
+cSEMIC  dw DOCOLON
         dw _LIT-2, _EXIT-2, _COMMA-2
         dw _LATEST-2, _FETCH-2, _HIDDEN-2
         dw _LBRAC-2
@@ -1008,7 +1036,7 @@ _HIDDEN pop hl
 
 ; HIDE ( "<spaces>name" -- )
 defWORD("HIDE")
-cHIDE   dw Colon
+cHIDE   dw DOCOLON
         dw _WORD-2
         dw _FIND-2
         dw _HIDDEN-2
@@ -1047,7 +1075,7 @@ _TYPE   pop bc
 
 ; QUIT ( -- )
 defWORD("QUIT")
-cQUIT   dw Colon
+cQUIT   dw DOCOLON
         dw _R0-2, _RSPSTO-2             ; R0 RSP!
         dw _LIT-2, 1, _ECHO-2, _STORE-2 ; 1 ECHO !
         dw _INTERP-2                    ; DO INTERPRET
