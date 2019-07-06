@@ -33,25 +33,25 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `.S`        | N   | TOOLS    | --                               | display stack contents                        |
 | `/`         | N\* | CORE     | n1 n2 -- n1÷n2                   | `/MOD SWAP DROP`                              |
 | `/MOD`      | Y   | CORE     | n1 n2 -- rem quo                 |                                               |
-| `0<`        | N\* | CORE     | n -- flag                        | `0 <`                                         |
+| `0<`        | N\* | CORE     | n -- flag                        | is negative?                                  |
 | `0<>`       | Y   | CORE-EXT | n -- flag                        |                                               |
-| `0<=`       | N\* |          | n -- flag                        | `0 <=`                                        |
+| `0<=`       | N\* |          | n -- flag                        | is negative or 0?                             |
 | `0=`        | Y   | CORE     | n -- flag                        |                                               |
-| `0>`        | N\* | CORE-EXT | n -- flag                        | `0 >`                                         |
-| `0>=`       | N\* |          | n -- flag                        | `0 >=`                                        |
+| `0>`        | N\* | CORE-EXT | n -- flag                        | is positive?                                  |
+| `0>=`       | N\* |          | n -- flag                        | is positive or 0?                             |
 | `0BRANCH`   | Y   |          | ...                              |                                               |
 | `1+`        | Y   | CORE     | x -- x+1                         |                                               |
 | `1-`        | Y   | CORE     | x -- x-1                         |                                               |
-| `2!`        | N\* | CORE     | x1 x2 a-addr --                  | `SWAP OVER ! CELL+ !`                         |
-| `2*`        | N\* | CORE     | n -- n<<1                        | `2 *`                                         |
-| `2/`        | N\* | CORE     | n -- n>>1                        | `2 /`                                         |
-| `2>R`       | N\* | CORE-EXT | x1 x2 -- R: -- x1 x2             | `SWAP >R >R`                                  |
-| `2@`        | N\* | CORE     | a-addr -- x1 x2                  | `DUP CELL+ @ SWAP @`                          |
+| `2!`        | N\* | CORE     | x1 x2 a-addr --                  | store double-width value                      |
+| `2*`        | N   | CORE     | n -- n<<1                        | logical shift left                            |
+| `2/`        | N   | CORE     | n -- n>>1                        | logical shift right                           |
+| `2>R`       | N\* | CORE-EXT | x1 x2 -- R: -- x1 x2             | put double-width value on rstack              |
+| `2@`        | N\* | CORE     | a-addr -- x1 x2                  | fetch double-width value                      |
 | `2DROP`     | Y   | CORE     | x1 x2 --                         |                                               |
-| `2DUP`      | N\* | CORE     | x1 x2 -- x1 x2 x1 x2             | `OVER OVER`                                   |
+| `2DUP`      | N\* | CORE     | x1 x2 -- x1 x2 x1 x2             | duplicate double-width value                  |
 | `2OVER`     | N   | CORE     | x1 x2 x3 x4 -- x1 x2 x3 x4 x1 x2 |                                               |
-| `2R>`       | N\* | CORE-EXT | -- x1 x2 R: x1 x2 --             | `R> R> SWAP`                                  |
-| `2R@`       | N\* | CORE-EXT | -- x1 x2 R: x1 x2 -- x1 x2       | `R> R> 2DUP >R >R SWAP`                       |
+| `2R>`       | N\* | CORE-EXT | -- x1 x2 R: x1 x2 --             | take double-width value from rstack           |
+| `2R@`       | N\* | CORE-EXT | -- x1 x2 R: x1 x2 -- x1 x2       | copy double-width value from rstack           |
 | `2SWAP`     | Y   | CORE     | x1 x2 x3 x4 -- x3 x4 x1 x2       |                                               |
 | `:`         | Y   | CORE     | C: "<spaces\>name" -- colon-sys  | define and begin compilation of new word      |
 | `:NONAME`   | N   | CORE-EXT | C: "<spaces\>name" -- colon-sys  | define a nameless word, push xt               |
@@ -87,9 +87,10 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `CLS`       | Y?  |          | --                               | clears the screen                             |
 | `CMOVE`     | Y   | STRING   | src dst len --                   |                                               |
 | `COLOUR`    | Y?  |          | n --                             | set text/bg colour                            |
-| `CONSTANT`  | N   | CORE     | x "<spaces\>name" --             | declare named constant                        |
-| `CREATE`    | Y   | CORE     | "<spaces\>name" --               |                                               |
+| `CONSTANT`  | N\* | CORE     | x "<spaces\>name" --             | declare named constant                        |
+| `CREATE`    | Y   | CORE     | "<spaces\>name" --               | create a new word that returns its dfa        |
 | `DOCOL`     | Y   |          | -- a-addr                        | address of `:` runtime routine                |
+| `DOES>`     | Y   | CORE     | --                               | assigns runtime behaviour to latest word      |
 | `DROP`      | Y   | CORE     | x --                             |                                               |
 | `DSP!`      | Y   |          | a-addr --                        | set data stack address                        |
 | `DSP@`      | Y   |          | -- a-addr                        | get data stack address                        |
