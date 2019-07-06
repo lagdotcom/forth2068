@@ -32,7 +32,6 @@ chAT            equ 22
 ; lenflags: 1 byte (len up to 0x1f)
 ; name: N bytes
 ; code pointer: 2 bytes (or N bytes if defined in asm)
-; data pointer: 2 bytes (or 0 bytes if asm/colon word)
 ; data field: N bytes
 ; definition: N bytes
 
@@ -109,6 +108,14 @@ lods    macro()
         ld hl,(ix)
         inc ix
         inc ix
+mend
+
+postpone macro(n)
+        dw _LIT-2, n, _COMMA-2
+mend
+
+postponeByte macro(n)
+        dw _LIT-2, n, _CCOMMA-2
 mend
 
 ; ok, let's get started!
@@ -907,7 +914,7 @@ _not_found:
         scf
         ret
 
-; >CFA ( x -- x )
+; >CFA ( xt -- x )
 defCODE(">CFA")
 _TCFA   pop hl
         call do_tcfa
@@ -924,7 +931,7 @@ do_tcfa:
         add hl,bc       ; skip name
         ret
 
-; >BODY ( x -- x )
+; >BODY ( xt -- x )
 defWORD(">BODY")
 cTBODY  dw DOCOLON
         dw _TCFA-2
@@ -950,15 +957,9 @@ _HEADERCOMMA:
         ld (var_DP),de
         jNEXT()
 
-; (CREATE) ( -- adr )
-defCODE("(CREATE)")
 DOCREATE:
         ; at this point, DE is already pointing at the dfa!
-        ex de,hl
-        ld c,(hl)
-        inc hl
-        ld b,(hl)
-        push bc
+        push de
         jNEXT()
 
 ; CREATE ( "<spaces>name" -- )
@@ -966,8 +967,25 @@ defWORD("CREATE")
 cCREATE dw DOCOLON
         dw _WORD-2                              ; WORD ( adr len -- )
         dw _HEADERCOMMA-2                       ; HEADER ( -- )
-        dw _LIT-2, DOCREATE, _COMMA-2          ; POSTPONE (CREATE)     \ cfa
-        dw cHERE, _CELLP-2, _COMMA-2            ; HERE CELL+ ,          \ dfa
+        postpone(DOCREATE)                      ; POSTPONE (CREATE)
+        dw _EXIT-2
+
+defIMMWORD("DOES>")
+cDOES   dw DOCOLON
+        ; fix the CFA of the last defined word
+        postpone(_LIT-2)                        ; POSTPONE LIT
+        dw cHERE, _LIT-2, 12, _ADD-2, _COMMA-2  ; HERE 12 + ,
+        postpone(_LATEST-2)                     ; POSTPONE LATEST
+        postpone(_FETCH-2)                      ; POSTPONE @
+        postpone(_TCFA-2)                       ; POSTPONE >CFA
+        postpone(_STORE-2)                      ; POSTPONE !
+        postpone(_EXIT-2)                       ; POSTPONE EXIT
+        ; DOES> must set up the stack and call any remaining forth code
+        postponeByte(0xD5)                      ; POSTPONE [push de]
+        postponeByte(0x11)                      ; POSTPONE [ld de,XXXX]
+        dw cHERE, _LIT-2, 5, _ADD-2, _COMMA-2   ; HERE 5 + ,
+        postponeByte(0xC3)                      ; POSTPONE [jp]
+        postpone(DOCOLON)                       ; POSTPONE DOCOLON
         dw _EXIT-2
 
 ; , ( x -- )
