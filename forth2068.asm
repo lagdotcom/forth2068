@@ -1128,8 +1128,8 @@ defWORD("QUIT")
 cQUIT   dw DOCOLON
         dw _R0-2, _RSPSTO-2             ; R0 RSP!
         dw _LIT-2, 1, _ECHO-2, _STORE-2 ; 1 ECHO !
-        dw _INTERP-2                    ; DO INTERPRET
-        dw _BRANCH-2, -6                ; LOOP
+        dw _INTERP-2                    ; BEGIN INTERPRET
+        dw _BRANCH-2, -6                ; AGAIN
         ; don't need NEXT
 
 ; EXECUTE ( xt -- )
