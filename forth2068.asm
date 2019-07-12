@@ -737,6 +737,17 @@ _gk_l   ld a,(hl)
         pop bc
 _gk_x   ret
 
+; WARN: uses spectrum internals
+;   not checked on TS2068
+; KEY? ( -- x | 0 )
+defCODE("KEY?")
+_KEYQ   ld hl,SpectrumLastKey
+        ld c,(hl)       ; get key (if any)
+        ld (hl),0       ; clear last key
+        ld b,0
+        push bc
+        jNEXT()
+
 ; WORD ( -- adr len )
 defCODE("WORD")
 _WORD   call do_word
