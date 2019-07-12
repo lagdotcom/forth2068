@@ -2,6 +2,17 @@
 
 It's forth, but running on a TS2068! Except it only supports the Spectrum right now, haha.
 
+## Getting Started
+
+Currently Forth2068 is only confirmed to run in [Zeus Z80 Assembler](http://desdes.com/products/oldfiles/zeus.htm). Grab that and run it.
+
+## TODO
+
+- Implement input-related words: `>IN EVALUATE REFILL SOURCE SOURCE-ID`
+- Write Tetris for my Forth
+- Fix everything to work on a TS2068
+- implement the rest of the Core wordlist?
+
 ## Word implementation
 
 Y? means it's a Spectrum-specific implementation, so it needs replacing.
