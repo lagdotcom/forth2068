@@ -104,18 +104,24 @@ pushAndGo macro(name)
         jNEXT()
 mend
 
-lods    macro()
-        ld hl,(ix)
+lods    macro(reg)
+        ld reg,(ix)
         inc ix
         inc ix
+mend
+
+lit     macro(n)
+        dw _LIT-2, n
 mend
 
 postpone macro(n)
-        dw _LIT-2, n, _COMMA-2
+        lit(n)
+        dw _COMMA-2
 mend
 
 postponeByte macro(n)
-        dw _LIT-2, n, _CCOMMA-2
+        lit(n)
+        dw _CCOMMA-2
 mend
 
 ; ok, let's get started!
@@ -127,7 +133,7 @@ Start:  ;di
         jNEXT()
 
 Next:
-        lods()
+        lods(hl)
         ld e,(hl)
         inc hl
         ld d,(hl)
@@ -160,7 +166,9 @@ var_ECHO dw 0
 ; this means that the start of the buffer will be 00 when in a 16-bit reg
 align $100
 word_buffer dw 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+parse_buffer equ .
 
+align $100
 ; DROP ( x -- )
 defCODE("DROP")
 _DROP   pop af
@@ -479,8 +487,16 @@ _EXIT   popRSP(b,c)
 
 ; LIT ( -- x )
 defCODE("LIT")
-_LIT    lods()
+_LIT    lods(hl)
         push hl
+        jNEXT()
+
+; LITSTRING ( -- c-addr u )
+defCODE("LITSTRING")
+_LITST  lods(de)
+        push ix
+        push de
+        add ix,de
         jNEXT()
 
 ; ! ( x adr -- )
@@ -1017,19 +1033,19 @@ _RBRAC  ld a,1
 ; : ( C: "<spaces>name" -- )
 defWORD(":")
 cCOLON  dw DOCOLON
-        dw _WORD-2
-        dw _HEADERCOMMA-2
-        dw _LIT-2, DOCOLON, _COMMA-2
-        dw _LATEST-2, _FETCH-2, _HIDDEN-2
-        dw _RBRAC-2
+        dw _WORD-2                              ; WORD
+        dw _HEADERCOMMA-2                       ; HEADER,
+        postpone(DOCOLON)                       ; POSTPONE DOCOLON
+        dw _LATEST-2, _FETCH-2, _HIDDEN-2       ; LATEST @ HIDDEN
+        dw _RBRAC-2                             ; ]
         dw _EXIT-2
 
 ; ; ( C: -- )
 defIMMWORD(";")
 cSEMIC  dw DOCOLON
-        dw _LIT-2, _EXIT-2, _COMMA-2
-        dw _LATEST-2, _FETCH-2, _HIDDEN-2
-        dw _LBRAC-2
+        postpone(_EXIT-2)                       ; POSTPONE EXIT
+        dw _LATEST-2, _FETCH-2, _HIDDEN-2       ; LATEST @ HIDDEN
+        dw _LBRAC-2                             ; [
         dw _EXIT-2
 
 ; IMMEDIATE ( -- ) \ make latest word immediate
@@ -1062,13 +1078,13 @@ cHIDE   dw DOCOLON
 
 ; ' ( -- x )
 defCODE("'")
-_TICK   lods()
+_TICK   lods(hl)
         push hl
         jNEXT()
 
 ; BRANCH ( -- )
 defCODE("BRANCH")
-_BRANCH lods()
+_BRANCH lods(hl)
         ld de,hl
         add ix,de
         jNEXT()
@@ -1180,6 +1196,48 @@ _NUMSH  pop bc
         call SpectrumShowNumber
         jNEXT()
 
+; PARSE ( char "ccc<char>" -- c-addr u )
+defCODE("PARSE")
+_PARSE  pop bc
+        ld de,parse_buffer
+        ld b,0
+_parse_main:
+        call do_key
+        cp c
+        jr z,_parse_exit
+        ld (de),a
+        inc de
+        inc b
+        jr _parse_main
+_parse_exit:
+        ld c,b
+        ld b,0
+        push parse_buffer
+        push bc
+        jNEXT()
+
+; .( ( "ccc<paren>" -- )
+defWORD(".(")
+cDOTPAR dw DOCOLON
+        lit(')')                                ; [ CHAR ) ]
+        dw _PARSE-2, _TYPE-2                    ; PARSE TYPE
+        dw _EXIT-2
+
+; we manually write the header here because zeus doesn't like
+; escaping the quote!
+dw link
+link = . - 2
+db 2
+db '.', '"'
+; ." ( "ccc<quote>" -- )
+cDOTQUO dw DOCOLON
+        lit('"')                                ; [ CHAR " ]
+        dw _PARSE-2                             ; PARSE
+        postpone(_LITST-2)                      ; POSTPONE LITSTRING
+        dw _DUP-2, _COMMA-2                     ; DUP ,
+        dw cHERE, _SWAP-2, _CMOVE-2             ; HERE SWAP CMOVE
+        dw _EXIT-2
+
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
 ; WORDS ( -- )
@@ -1253,26 +1311,26 @@ _CLS    call SpectrumClearScreen
         jNEXT()
 
 cold_start:
-        dw _LIT-2, 0
+        lit(0)
         dw _SETBOR-2    ; 0 SETBORDER
-        dw _LIT-2, 7
+        lit(7)
         dw _SETCOL-2    ; 7 SETCOLOUR
         dw _CLS-2       ; CLS
-        dw _LIT-2, hello_msg
-        dw _LIT-2, hello_msg_len
+        lit(hello_msg)
+        lit(hello_msg_len)
         dw _TYPE-2      ; .( FORTH2068 v)
         dw _VER-2
         dw _NUMSH-2     ; VERSION .
         dw _SPACE-2     ; SPACE
-        dw _LIT-2, end_of_builtins-CodeOrg
+        lit(end_of_builtins - CodeOrg)
         dw _NUMSH-2     ; HERE &6000 - .
-        dw _LIT-2, bytes_msg
-        dw _LIT-2, bytes_msg_len
+        lit(bytes_msg)
+        lit(bytes_msg_len)
         dw _TYPE-2      ; .( bytes used;)
-        dw _LIT-2, ok_msg
-        dw _LIT-2, ok_msg_len
+        lit(ok_msg)
+        lit(ok_msg_len)
         dw _TYPE-2      ; .(  ok)
         dw cQUIT        ; QUIT
 
 last_word equ link
-end_of_builtins equ .
+end_of_builtins equ cold_start

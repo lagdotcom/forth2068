@@ -27,8 +27,8 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `-!`        | Y   | CORE     | x a-addr --                      | subtract and store value                      |
 | `-ROT`      | Y   |          | x1 x2 x3 -- x3 x1 x2             |                                               |
 | `.`         | Y?  | CORE     | n --                             | show `n`                                      |
-| `."`        | N   | CORE     | --                               | compile LITSTRING                             |
-| `.(`        | N   | CORE-EXT | "ccc<paren\>" --                 | parse and display string                      |
+| `."`        | Y   | CORE     | --                               | compile LITSTRING                             |
+| `.(`        | Y   | CORE-EXT | "ccc<paren\>" --                 | parse and display string                      |
 | `.R`        | N   | CORE-EXT | n size --                        | display `n` right-aligned in `size` chars     |
 | `.S`        | N   | TOOLS    | --                               | display stack contents                        |
 | `/`         | N\* | CORE     | n1 n2 -- n1÷n2                   | `/MOD SWAP DROP`                              |
@@ -156,7 +156,7 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `LEAVE`     | N   | CORE     | --                               | exit current `DO`..`LOOP`                     |
 | `LIT`       | Y   |          | ...                              |                                               |
 | `LITERAL`   | N\* | CORE     | x --                             | compile `LIT x`                               |
-| `LITSTRING` | N   |          | ...                              |                                               |
+| `LITSTRING` | Y   |          | ...                              |                                               |
 | `LOOP`      | N   | CORE     | --                               | increment index, jump if limit not reached    |
 | `LSHIFT`    | N   | CORE     | x u -- x << u                    | shift x u places left                         |
 | `M*`        | N   | CORE     | x1 x2 -- d                       | multiply to double-length value               |
@@ -172,7 +172,7 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `OR`        | Y   | CORE     | x1 x2 -- x1\|x2                  |                                               |
 | `OVER`      | Y   | CORE     | x1 x2 -- x1 x2 x1                |                                               |
 | `PAD`       | N   | CORE-EXT | -- c-addr                        | get address of transient buffer region        |
-| `PARSE`     | N   | CORE-EXT | char "ccc<char\>" -- c-addr u    | grab input until char reached                 |
+| `PARSE`     | Y   | CORE-EXT | char "ccc<char\>" -- c-addr u    | grab input until char reached                 |
 | `PARSE-NAME`| N   | CORE-EXT | "<spaces\>name<space\>" -- c-addr u | grab next word from input                  |
 | `PICK`      | N   | CORE-EXT | * u -- * xu                      | copy xu to top of stack                       |
 | `POSTPONE`  | N\* | CORE     | "<spaces\>name" --               | compile xt for name                           |
