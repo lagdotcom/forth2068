@@ -162,6 +162,10 @@ var_LATEST dw last_word
 var_BASE dw 10
 var_S0 dw stack_top
 var_ECHO dw 0
+var_SRC dw 0
+var_SRCID dw 0
+var_SRCLEN dw 0
+var_SRCIN dw 0
 
 ; this means that the start of the buffer will be 00 when in a 16-bit reg
 align $100
@@ -620,6 +624,18 @@ _BASE   pushAndGo(var_BASE)
 defCODE("ECHO")
 _ECHO   pushAndGo(var_ECHO)
 
+defCODE("SRC")
+_SRC    pushAndGo(var_SRC)
+
+defCODE("SRC-ID")
+_SRCID  pushAndGo(var_SRCID)
+
+defCODE("SRC-LEN")
+_SRCLEN pushAndGo(var_SRCLEN)
+
+defCODE(">IN")
+_SRCIN  pushAndGo(var_SRCIN)
+
 defCODE("VERSION")
 _VER    pushAndGo(FORTHVER)
 
@@ -718,6 +734,23 @@ _KEY    call do_key
         jNEXT()
 ; puts hit key in a, trashes hl, echoes if var_ECHO is nonzero
 do_key:
+        ld hl,(var_SRCID)
+        ld a,h
+        or l
+        jr z,_keyinput
+_keyeval:
+        ld hl,(var_SRC)
+        ld bc,hl
+        ld hl,(var_SRCIN)
+        inc hl
+        ld (var_SRCIN),hl
+        dec hl
+        or a ; ccf
+        adc hl,bc
+        ld a,(hl)
+        push af
+        jNEXT()
+_keyinput:
         push bc
         ld hl,SpectrumLastKey
         ld (hl),0       ; clear sys var
@@ -980,6 +1013,21 @@ cTBODY  dw DOCOLON
         dw _TCFA-2
         dw _CELLP-2
         dw _EXIT-2
+
+; write string into data area
+; hl = source, bc = length
+write_bytes:
+        ld de,(var_DP)
+        ldir
+        ld (var_DP),de
+        ret
+
+; S, ( adr len -- )
+defCODE("S,")
+_SCOMMA pop bc
+        pop hl
+        call write_bytes
+        jNEXT()
 
 ; HEADER, ( adr len -- )
 defCODE("HEADER,")
@@ -1261,10 +1309,18 @@ cDOTQUO dw DOCOLON
         lit('"')                                ; [ CHAR " ]
         dw _PARSE-2                             ; PARSE
         postpone(_LITST-2)                      ; POSTPONE LITSTRING
-        dw _DUP-2, _COMMA-2, _DUP-2, _NROT-2    ; DUP , DUP -ROT ( len src len )
-        dw cHERE, _SWAP-2, _CMOVE-2             ; HERE SWAP CMOVE ( len )
-        dw cHERE, _ADD-2, _DP-2, _STORE-2       ; HERE + !
+        dw _DUP-2, _COMMA-2, _SCOMMA-2          ; DUP , S,
         postpone(_TYPE-2)                       ; POSTPONE TYPE
+        dw _EXIT-2
+
+dw link
+link = . - 2
+db 2 + F_IMMED
+db 'S', '"'
+; S" ( "ccc<quote>" -- c-addr len )
+cSQUOTE dw DOCOLON
+        lit('"')
+        dw _PARSE-2
         dw _EXIT-2
 
 ; DEPTH ( -- x )
@@ -1276,6 +1332,30 @@ _DEPTH  or a ; ccf
         srl l   ; hl >>= 1
         push hl
         jNEXT()
+
+; EVALUATE ( * c-addr u -- * )
+defWORD("EVALUATE")
+cEVAL   dw DOCOLON
+        ; TODO: save current input spec
+        dw _SRCLEN-2, _STORE-2                  ; SRC-LEN !
+        dw _SRC-2, _STORE-2                     ; SRC !
+        lit(0)
+        dw _SRCIN-2, _STORE-2                   ; 0 >IN !
+        lit(-1)
+        dw _SRCID-2, _STORE-2                   ; -1 SRC-ID !
+        dw _SRCLEN-2, _FETCH-2                  ; BEGIN
+        dw _SRCIN-2, _FETCH-2, _SUB-2           ; SRC-LEN @ >IN @ -
+        lit(0)
+        dw _GT-2, _ZBRAN-2, 6                   ; 0 > WHILE
+        dw _INTERP-2                            ; INTERPRET
+        dw _BRANCH-2, -26                       ; AGAIN
+        ; TODO: restore input spec
+        lit(0)
+        dw _DUP-2, _DUP-2                       ; 0 0 0
+        dw _SRC-2, _STORE-2                     ; SRC !
+        dw _SRCID-2, _STORE-2                   ; SRC-ID !
+        dw _SRCIN-2, _STORE-2                   ; >IN !
+        dw _EXIT-2
 
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
@@ -1296,8 +1376,7 @@ _wloop: push hl
         ld e,(hl)
         ld a,e
         inc hl
-        ld d,(hl)
-        or d
+        or (hl)
         jr z,_wexit
         ld hl,de
         ld a,' '
@@ -1372,4 +1451,4 @@ cold_start:
         dw cQUIT        ; QUIT
 
 last_word equ link
-end_of_builtins equ cold_start
+end_of_builtins equ .
