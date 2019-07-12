@@ -112,7 +112,7 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `DEFER`     | N\* | CORE-EXT | "<spaces\>name" --               | create word with reassignable definition      |
 | `DEFER!`    | N   | CORE-EXT | xt defer --                      | set `DEFER`red word to execute xt             |
 | `DEFER@`    | N   | CORE-EXT | defer -- xt                      | get xt of `DEFER`red word                     |
-| `DEPTH`     | N   | CORE     | -- n                             | get current stack depth                       |
+| `DEPTH`     | Y   | CORE     | -- n                             | get current stack depth                       |
 | `DO`        | N   | CORE     | limit index --                   | set bounded loop point beginning              |
 | `DOCOL`     | Y   |          | -- a-addr                        | address of `:` runtime routine                |
 | `DOES>`     | Y   | CORE     | --                               | assigns runtime behaviour to latest word      |

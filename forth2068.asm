@@ -1238,6 +1238,16 @@ cDOTQUO dw DOCOLON
         dw cHERE, _SWAP-2, _CMOVE-2             ; HERE SWAP CMOVE
         dw _EXIT-2
 
+; DEPTH ( -- x )
+defCODE("DEPTH")
+_DEPTH  or a ; ccf
+        ld hl,(var_S0)
+        sbc hl,sp
+        srl h
+        srl l
+        push hl
+        jNEXT()
+
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
 ; WORDS ( -- )
