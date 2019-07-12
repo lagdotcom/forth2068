@@ -1243,15 +1243,17 @@ cDOTPAR dw DOCOLON
 ; escaping the quote!
 dw link
 link = . - 2
-db 2
+db 2 + F_IMMED
 db '.', '"'
 ; ." ( "ccc<quote>" -- )
 cDOTQUO dw DOCOLON
         lit('"')                                ; [ CHAR " ]
         dw _PARSE-2                             ; PARSE
         postpone(_LITST-2)                      ; POSTPONE LITSTRING
-        dw _DUP-2, _COMMA-2                     ; DUP ,
-        dw cHERE, _SWAP-2, _CMOVE-2             ; HERE SWAP CMOVE
+        dw _DUP-2, _COMMA-2, _DUP-2, _NROT-2    ; DUP , DUP -ROT ( len src len )
+        dw cHERE, _SWAP-2, _CMOVE-2             ; HERE SWAP CMOVE ( len )
+        dw cHERE, _ADD-2, _DP-2, _STORE-2       ; HERE + !
+        postpone(_TYPE-2)                       ; POSTPONE TYPE
         dw _EXIT-2
 
 ; DEPTH ( -- x )
@@ -1260,7 +1262,7 @@ _DEPTH  or a ; ccf
         ld hl,(var_S0)
         sbc hl,sp
         srl h
-        srl l
+        srl l   ; hl >>= 1
         push hl
         jNEXT()
 
