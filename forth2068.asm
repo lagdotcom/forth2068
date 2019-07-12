@@ -276,6 +276,22 @@ _CELLM  pop bc
         push bc
         jNEXT()
 
+; 2* ( x -- x<<1 )
+defCODE("2*")
+_SHIFTL pop hl
+        sla l
+        rl h
+        push hl
+        jNEXT()
+
+; 2/ ( x -- x>>1 )
+defCODE("2/")
+_SHIFTR pop hl
+        sra h
+        rr l
+        push hl
+        jNEXT()
+
 ; + ( x1 x2 -- x1+x2 )
 defCODE("+")
 _ADD    pop hl

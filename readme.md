@@ -43,8 +43,8 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `1+`        | Y   | CORE     | x -- x+1                         |                                               |
 | `1-`        | Y   | CORE     | x -- x-1                         |                                               |
 | `2!`        | N\* | CORE     | x1 x2 a-addr --                  | store double-width value                      |
-| `2*`        | N   | CORE     | n -- n<<1                        | logical shift left                            |
-| `2/`        | N   | CORE     | n -- n>>1                        | logical shift right                           |
+| `2*`        | Y   | CORE     | n -- n<<1                        | logical shift left                            |
+| `2/`        | Y   | CORE     | n -- n>>1                        | logical shift right                           |
 | `2>R`       | N\* | CORE-EXT | x1 x2 -- R: -- x1 x2             | put double-width value on rstack              |
 | `2@`        | N\* | CORE     | a-addr -- x1 x2                  | fetch double-width value                      |
 | `2DROP`     | Y   | CORE     | x1 x2 --                         |                                               |
