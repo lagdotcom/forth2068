@@ -50,6 +50,14 @@ jNEXT   macro()
         jp Next
 mend
 
+clearCarry macro()
+        or a
+mend
+
+clearA  macro()
+        xor a
+mend
+
 pushRSP macro(r1,r2)
         ld hl,(rstack)
         dec hl
@@ -114,6 +122,10 @@ lit     macro(n)
         dw _LIT-2, n
 mend
 
+setVar  macro(var, val)
+        dw _LIT-2, val, var-2, _STORE-2
+mend
+
 postpone macro(n)
         lit(n)
         dw _COMMA-2
@@ -161,18 +173,24 @@ var_DP dw end_of_builtins
 var_LATEST dw last_word
 var_BASE dw 10
 var_S0 dw stack_top
-var_ECHO dw 0
 var_SRC dw 0
 var_SRCID dw 0
 var_SRCLEN dw 0
 var_SRCIN dw 0
 
-; this means that the start of the buffer will be 00 when in a 16-bit reg
+; buffer region
 align $100
-word_buffer dw 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-parse_buffer equ .
 
-align $100
+word_buffer_count db 0
+word_buffer equ .
+org . + 31
+
+terminal_input_buffer equ .
+org . + 80
+
+parse_buffer equ .
+org . + 80
+
 ; DROP ( x -- )
 defCODE("DROP")
 _DROP   pop af
@@ -308,7 +326,7 @@ _ADD    pop hl
 defCODE("-")
 _SUB    pop de
         pop hl
-        or a ; clear carry
+        clearCarry()
         sbc hl,de
         push hl
         jNEXT()
@@ -357,7 +375,7 @@ defCODE("=")
 _EQ     pop bc
         pop hl
         ld de,0
-        or a ; clear carry
+        clearCarry()
         sbc hl,bc
         add hl,bc
         jr nz,_EQx
@@ -370,7 +388,7 @@ defCODE("<>")
 _NEQ    pop bc
         pop hl
         ld de,0
-        or a ; clear carry
+        clearCarry()
         sbc hl,bc
         add hl,bc
         jr z,_NEQx
@@ -383,7 +401,7 @@ defCODE("<")
 _LT     pop bc
         pop hl
         ld de,0
-        or a ; clear carry
+        clearCarry()
         sbc hl,bc
         jr nc,_LTx
         dec de ; -1 = true
@@ -395,7 +413,7 @@ defCODE(">")
 _GT     pop hl
         pop bc
         ld de,0
-        or a ; clear carry
+        clearCarry()
         sbc hl,bc
         jr nc,_GTx
         dec de ; -1 = true
@@ -407,7 +425,7 @@ defCODE("<=")
 _LTE    pop hl
         pop bc
         ld de,0
-        or a ; clear carry
+        clearCarry()
         sbc hl,bc
         jr c,_LTEx
         dec de ; -1 = true
@@ -419,7 +437,7 @@ defCODE(">=")
 _GTE    pop bc
         pop hl
         ld de,0
-        or a ; clear carry
+        clearCarry()
         sbc hl,bc
         jr c,_GTEx
         dec de ; -1 = true
@@ -612,6 +630,11 @@ cHERE   dw DOCOLON
         dw _DP-2, _FETCH-2      ; DP @
         dw _EXIT-2
 
+defWORD("SOURCE-ID")
+cSRCID  dw DOCOLON
+        dw _SRCID-2, _FETCH-2   ; SRC-ID @
+        dw _EXIT-2
+
 defCODE("LATEST")
 _LATEST pushAndGo(var_LATEST)
 
@@ -620,9 +643,6 @@ _S0     pushAndGo(var_S0)
 
 defCODE("BASE")
 _BASE   pushAndGo(var_BASE)
-
-defCODE("ECHO")
-_ECHO   pushAndGo(var_ECHO)
 
 defCODE("SRC")
 _SRC    pushAndGo(var_SRC)
@@ -732,42 +752,13 @@ defCODE("KEY")
 _KEY    call do_key
         push af
         jNEXT()
-; puts hit key in a, trashes hl, echoes if var_ECHO is nonzero
+; puts hit key in a, trashes hl
 do_key:
-        ld hl,(var_SRCID)
-        ld a,h
-        or l
-        jr z,_keyinput
-_keyeval:
-        ld hl,(var_SRC)
-        ld bc,hl
-        ld hl,(var_SRCIN)
-        inc hl
-        ld (var_SRCIN),hl
-        dec hl
-        or a ; ccf
-        adc hl,bc
-        ld a,(hl)
-        push af
-        jNEXT()
-_keyinput:
-        push bc
         ld hl,SpectrumLastKey
         ld (hl),0       ; clear sys var
 _gk_l   ld a,(hl)
         cp 0
         jr z, _gk_l
-        ld b,a
-        ld hl,(var_ECHO)
-        ld a,h
-        or l
-        ld a,b
-        jr z,_gk_x
-        ; todo: avoid nonprintables?
-        ; todo: backspace???
-        rst $10 ; SPECTRUM!
-        ld a,b
-        pop bc
 _gk_x   ret
 
 ; WARN: uses spectrum internals
@@ -785,46 +776,44 @@ _KEYQ   ld hl,SpectrumLastKey
 defCODE("WORD")
 _WORD   call do_word
         push de
-        push hl
+        push bc
         jNEXT()
 ; gets the next word in the input stream
-; hl = length
 ; de = word
-; trashes af
+; bc = length
+; trashes af and hl
 do_word:
-        call do_key
+        ld hl,(var_SRC)
+        ld bc,(var_SRCIN)
+        clearCarry()
+        adc hl,bc
+        ld bc,0
+_word_start:
+        ld de,hl
+        ld a,(hl)
+        inc hl
         cp '\'
-        jr z,_skip_comment
+        jr z,_word_refill
+        cp chNL
+        jr z,_word_refill
         cp ' '
-        jr z,do_word
-        cp chBS
-        jr z,do_word
-        cp chNL
-        jr z,do_word
-        ld de,word_buffer
-_main:
-        ld (de),a
-        inc de
-        call do_key
-        cp chBS
-        jr z,_bs
+        jr z,_word_start
+_word_main:
+        ld a,(hl)
+        inc hl
+        inc bc
         cp ' '+1
-        jr nc,_main
-        ld hl,word_buffer
-        or a; ccf
-        ex de,hl
-        sbc hl,de       ; hl = length
-        jr z,do_word    ; got nothing? do it again
+        jr nc,_word_main
+        ld hl,(var_SRCIN)
+        clearCarry()
+        adc hl,bc
+        inc hl
+        ld (var_SRCIN),hl
+        dec hl
         ret
-_skip_comment:
-        call do_key
-        cp chNL
-        jr nz,_skip_comment
+_word_refill:
+        call do_refill
         jr do_word
-_bs:
-        dec de
-        jr z,do_word    ; this only works because word_buffer is XX00
-        jr _main
 
 ; NUMBER ( adr len -- x result )
 defCODE("NUMBER")
@@ -837,7 +826,7 @@ _NUMBER pop bc ; len
 do_number:
         ld hl,0         ; hl = number
         ; if zero-length, return 0
-        xor a
+        clearA()
         add a,c
         jr z,_number_exit
         ; if it starts with -:
@@ -936,13 +925,12 @@ _number_exit:
 
 ; FIND ( adr len -- x )
 defCODE("FIND")
-_FIND:  pop hl  ; length
+_FIND:  pop bc  ; length
         pop de  ; address
         call do_find
         push hl
         jNEXT()
 do_find:
-        ld bc,hl        ; bc = length
         ld hl,(var_LATEST)
 _fmain: ld a,h
         or l
@@ -973,7 +961,7 @@ _found:
         pop bc
         pop de
         pop hl
-        or a ; ccf
+        clearCarry()
         ret
 _nextp: pop bc
         pop de
@@ -1095,7 +1083,7 @@ do_comma:
 
 ; [ ( -- )
 defIMMCODE("[")
-_LBRAC  xor a
+_LBRAC  clearA()
         ld (var_STATE),a
         jNEXT()
 
@@ -1159,15 +1147,15 @@ _TICK   lods(hl)
 
 ; BRANCH ( -- )
 defCODE("BRANCH")
-_BRANCH lods(hl)
-        ld de,hl
+_BRANCH lods(de)
         add ix,de
         jNEXT()
 
 ; 0BRANCH ( flag -- )
 defCODE("0BRANCH")
-_ZBRAN  pop af
-        cp 0
+_ZBRAN  pop bc
+        ld a,b
+        or c
         jr z,_BRANCH
         inc ix
         inc ix
@@ -1182,24 +1170,72 @@ _TYPE   pop bc
         call SpectrumShowString
         jNEXT()
 
-; QUIT ( -- )
-defWORD("QUIT")
-cQUIT   dw DOCOLON
-        dw _R0-2, _RSPSTO-2             ; R0 RSP!
-        dw _LIT-2, 1, _ECHO-2, _STORE-2 ; 1 ECHO !
-        dw _INTERP-2                    ; BEGIN INTERPRET
-        dw _BRANCH-2, -6                ; AGAIN
-        ; don't need NEXT
-
 ; EXECUTE ( xt -- )
 defCODE("EXECUTE")
 _EXEC   pop hl
+        ; TODO: shouldn't this affect RSP?
         jp (hl)
+
+; WARN: uses spectrum internal function
+;   not checked on TS2068
+; REFILL ( -- flag )
+defCODE("REFILL")
+_REFILL:
+        call do_refill
+        push de
+        jNEXT()
+; trashes everything
+; de = flag
+do_refill:
+        ld hl,(var_SRCID)
+        ld de,0
+        ld a,h
+        or l
+        ret nz
+_REFILL_console:
+        ld hl,var_SRC
+        ld (hl),terminal_input_buffer & $ff
+        inc hl
+        ld (hl),(terminal_input_buffer >> 8) & $ff
+        ld hl,var_SRCIN
+        ld (hl),0
+        inc hl
+        ld (hl),0
+        ; grab input until NL is read
+        ld bc,0
+        ld de,terminal_input_buffer
+_REFILL_loop:
+        call do_key
+        cp chNL
+        jr z,_REFILL_loopend
+        ; TODO: backspace
+        push af
+        rst $10 ; SPECTRUM
+        pop af
+        inc bc
+        ld (de),a
+        inc de
+        jr _REFILL_loop
+_REFILL_loopend:
+        ld a,' '
+        rst $10 ; SPECTRUM
+        ld a,c
+        or b
+        jr z,do_refill ; do it again if we got nothing
+        clearA()
+        ld (de),a
+        ld hl,var_SRCLEN
+        ld (hl),c
+        inc hl
+        ld (hl),b
+        ; return TRUE
+        ld de,-1
+        ret
 
 ; INTERPRET ( -- )
 defCODE("INTERPRET")
 _INTERP call do_word
-        xor a
+        clearA()
         ld (interp_lit),a
         call do_find ; hl = pointer
         jr c,_literal
@@ -1217,7 +1253,7 @@ _INTERP call do_word
 _literal:
         ld a,1
         ld (interp_lit),a
-        call do_number ; de = number, bc = error
+        call do_number ; hl = number, bc = error
         ld a,b
         or c
         jr nz,_error
@@ -1269,26 +1305,36 @@ _error:
 defCODE(".")
 _NUMSH  pop bc
         call SpectrumShowNumber
+        ld a,' '
+        rst $10 ; SPECTRUM
         jNEXT()
 
 ; PARSE ( char "ccc<char>" -- c-addr u )
 defCODE("PARSE")
-_PARSE  pop bc
+_PARSE: pop bc
+        ld a,c  ; a = char
+        ld hl,(var_SRC)
+        ld bc,(var_SRCIN)
+        clearCarry()
+        adc hl,bc
+        ld bc,0
+        cpir
+        ld a,c
+        cpl
+        ld c,a
+        ld b,0
         ld de,parse_buffer
-        ld b,0
-_parse_main:
-        call do_key
-        cp c
-        jr z,_parse_exit
-        ld (de),a
-        inc de
-        inc b
-        jr _parse_main
-_parse_exit:
-        ld c,b
-        ld b,0
-        push parse_buffer
+        push de
         push bc
+        sbc hl,bc
+        dec hl
+        ldir
+        ex de,hl
+        ld hl,(var_SRC)
+        ex de,hl
+        sbc hl,de
+        inc hl
+        ld (var_SRCIN),hl
         jNEXT()
 
 ; .( ( "ccc<paren>" -- )
@@ -1325,7 +1371,7 @@ cSQUOTE dw DOCOLON
 
 ; DEPTH ( -- x )
 defCODE("DEPTH")
-_DEPTH  or a ; ccf
+_DEPTH  clearCarry()
         ld hl,(var_S0)
         sbc hl,sp
         srl h
@@ -1333,28 +1379,67 @@ _DEPTH  or a ; ccf
         push hl
         jNEXT()
 
+; SAVE-INPUT ( -- input-spec )
+defWORD("SAVE-INPUT")
+cSAVEIN dw DOCOLON
+        dw _SRCLEN-2, _FETCH-2                  ; SRC-LEN @
+        dw _SRC-2, _FETCH-2                     ; SRC @
+        dw cSRCID                               ; SOURCE-ID
+        dw _SRCIN-2, _FETCH-2                   ; >IN @
+        dw _EXIT-2
+
+; RESTORE-INPUT ( input-spec -- )
+defWORD("RESTORE-INPUT")
+cRESTIN dw DOCOLON
+        dw _SRCIN-2, _STORE-2                   ; >IN !
+        dw _SRCID-2, _STORE-2                   ; SRC-ID !
+        dw _SRC-2, _STORE-2                     ; SRC !
+        dw _SRCLEN-2, _STORE-2                  ; SRC-LEN !
+        dw _EXIT-2
+
+defWORD("INTERPRET-LOOP")
+cINLOOP dw DOCOLON
+                                        ; BEGIN
+        dw _INTERP-2                    ; INTERPRET
+        dw _SRCLEN-2, _FETCH-2          ;   SRC-LEN @
+        dw _SRCIN-2, _FETCH-2           ;   >IN @
+        dw _LTE-2, _ZBRAN-2, -16        ; > WHILE
+        dw _EXIT-2
+
+; QUIT ( -- )
+defWORD("QUIT")
+cQUIT   dw DOCOLON
+        dw _R0-2, _RSPSTO-2             ; R0 RSP!
+        setVar(_SRCID, 0)               ; 0 SRC-ID !
+                                        ; BEGIN
+        dw _REFILL-2, _DROP-2           ;   REFILL DROP
+        dw cINLOOP                      ;   INTERPRET-LOOP
+        lit(ok_msg)
+        lit(ok_msg_len)
+        dw _TYPE-2                      ;   .(  ok\n)
+        dw _BRANCH-2, -20               ; AGAIN
+        ; don't need EXIT
+
 ; EVALUATE ( * c-addr u -- * )
 defWORD("EVALUATE")
 cEVAL   dw DOCOLON
-        ; TODO: save current input spec
+
+        dw _SRCLEN-2, _FETCH-2, _TOR-2          ; SRC-LEN @ >R
+        dw _SRC-2, _FETCH-2, _TOR-2             ; SRC @ >R
+        dw cSRCID, _TOR-2                       ; SOURCE-ID >R
+        dw _SRCIN-2, _FETCH-2, _TOR-2           ; >IN @ >R
+
         dw _SRCLEN-2, _STORE-2                  ; SRC-LEN !
         dw _SRC-2, _STORE-2                     ; SRC !
-        lit(0)
-        dw _SRCIN-2, _STORE-2                   ; 0 >IN !
-        lit(-1)
-        dw _SRCID-2, _STORE-2                   ; -1 SRC-ID !
-        dw _SRCLEN-2, _FETCH-2                  ; BEGIN
-        dw _SRCIN-2, _FETCH-2, _SUB-2           ; SRC-LEN @ >IN @ -
-        lit(0)
-        dw _GT-2, _ZBRAN-2, 6                   ; 0 > WHILE
-        dw _INTERP-2                            ; INTERPRET
-        dw _BRANCH-2, -26                       ; AGAIN
-        ; TODO: restore input spec
-        lit(0)
-        dw _DUP-2, _DUP-2                       ; 0 0 0
-        dw _SRC-2, _STORE-2                     ; SRC !
-        dw _SRCID-2, _STORE-2                   ; SRC-ID !
-        dw _SRCIN-2, _STORE-2                   ; >IN !
+        setVar(_SRCIN, 0)                       ; 0 >IN !
+        setVar(_SRCID, -1)                      ; -1 SRC-ID !
+        dw cINLOOP                              ; INTERPRET-LOOP
+
+        dw _FROMR-2, _SRCIN-2, _STORE-2         ; R> >IN !
+        dw _FROMR-2, _SRCID-2, _STORE-2         ; R> SRC-ID !
+        dw _FROMR-2, _SRC-2, _STORE-2           ; R> SRC !
+        dw _FROMR-2, _SRCLEN-2, _STORE-2        ; R> SRC-LEN !
+
         dw _EXIT-2
 
 ; WARN: uses spectrum internal function
@@ -1378,6 +1463,7 @@ _wloop: push hl
         inc hl
         or (hl)
         jr z,_wexit
+        ld d,(hl)
         ld hl,de
         ld a,' '
         rst $10 ; SPECTRUM

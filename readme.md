@@ -8,7 +8,6 @@ Currently Forth2068 is only confirmed to run in [Zeus Z80 Assembler](http://desd
 
 ## TODO
 
-- Implement input-related words: `>IN EVALUATE REFILL SOURCE SOURCE-ID`
 - Write Tetris for my Forth
 - Fix everything to work on a TS2068
 - implement the rest of the Core wordlist?
@@ -76,7 +75,7 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `>`         | Y   | CORE     | x1 x2 -- flag                    |                                               |
 | `>BODY`     | Y   | CORE     | xt -- a-addr                     | to data-field address                         |
 | `>CFA`      | Y   |          | xt -- a-addr                     | to code-field address                         |
-| `>IN`       | N   | CORE     | -- a-addr                        | get offset from input buffer to parse area    |
+| `>IN`       | Y   | CORE     | -- a-addr                        | get offset from input buffer to parse area    |
 | `>NUMBER`   | N   | CORE     | ud1 c-addr1 u1 -- ud2 c-addr2 u2 | ???                                           |
 | `>R`        | Y   | CORE     | x -- R: -- x                     |                                               |
 | `?`         | N\* | TOOLS    | a-addr --                        | `@ .`                                         |
@@ -139,7 +138,7 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `ENDOF`     | N   | CORE-EXT | --                               | resolve `OF`                                  |
 |`ENVIRONMENT?`|N   | CORE     | c-addr u -- false \| * true      | get environment value                         |
 | `ERASE`     | N   | CORE-EXT | addr u --                        | zero specified memory range                   |
-| `EVALUATE`  | N   | CORE     | * c-addr u -- *                  | evaluate string as FORTH code                 |
+| `EVALUATE`  | Y   | CORE     | * c-addr u -- *                  | evaluate string as FORTH code                 |
 | `EXECUTE`   | Y   | CORE     | xt --                            |                                               |
 | `EXIT`      | Y   | CORE     | R: nest-sys --                   |                                               |
 | `F_HIDDEN`  | Y   |          | -- x                             | hidden flag                                   |
@@ -194,9 +193,9 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `RAND`      | Y   |          | -- x                             | random number generator                       |
 | `RDROP`     | Y   |          | R: x --                          | `DROP` for the return stack                   |
 | `RECURSE`   | N\* | CORE     | --                               | compile call to current word                  |
-| `REFILL`    | N   | CORE-EXT | -- flag                          | attempt to refill input buffer                |
+| `REFILL`    | Y   | CORE-EXT | -- flag                          | attempt to refill input buffer                |
 | `REPEAT`    | N   | CORE     | --                               | jump back to previous `BEGIN`                 |
-|`RESTORE-INPUT`|N  | CORE-EXT | input-spec -- flag               | restore saved input-spec                      |
+|`RESTORE-INPUT`|Y  | CORE-EXT | input-spec -- flag               | restore saved input-spec                      |
 | `ROLL`      | N   | CORE-EXT | * u -- *                         | rotate top u cells of stack                   |
 | `ROT`       | Y   | CORE     | x1 x2 x3 -- x2 x3 x1             |                                               |
 | `RSHIFT`    | N   | CORE     | x u -- x >> u                    | logical shift x u places right                |
@@ -206,11 +205,11 @@ N\* means it's not implemented but is trivial to add in FORTH alone.
 | `S>D`       | N   | CORE     | n -- d                           | convert single-width to double-width value    |
 | `S0`        | Y   |          | -- a-addr                        | get data stack base                           |
 | `S\"`       | N   | CORE-EXT | "ccc<quote\>" --                 | compile string with escape codes              |
-| `SAVE-INPUT`| N   | CORE-EXT | -- input-spec                    | preserve current input-spec                   |
+| `SAVE-INPUT`| Y   | CORE-EXT | -- input-spec                    | preserve current input-spec                   |
 | `SIGN`      | N   | CORE     | n --                             | if negative, add - to pictured numeric output |
 | `SM/REM`    | N   | CORE     | d n -- rem quo                   | symmetric double-single division              |
-| `SOURCE`    | N   | CORE     | -- c-addr u                      | return current input buffer                   |
-| `SOURCE-ID` | N   | CORE-EXT | -- n                             | 0 = user input, -1 = string                   |
+| `SOURCE`    | Y   | CORE     | -- c-addr u                      | return current input buffer                   |
+| `SOURCE-ID` | Y   | CORE-EXT | -- n                             | 0 = user input, -1 = string                   |
 | `SPACE`     | Y   | CORE     | --                               | `BL EMIT`                                     |
 | `SPACES`    | N   | CORE     | n --                             | print n SPACES                                |
 | `STATE`     | Y   | CORE     | -- a-addr                        |                                               |
