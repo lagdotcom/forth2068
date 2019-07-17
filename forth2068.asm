@@ -84,22 +84,22 @@ HEADER  macro(name,flags)
         db name
 mend
 
-defCODE macro(name)
+defCode macro(name)
         HEADER(name,0)
         dw . + 2
 mend
 
-defIMMCODE macro(name)
-        HEADER(name,F_IMMED)
+defCodeFl macro(name,flags)
+        HEADER(name,flags)
         dw . + 2
 mend
 
-defWORD macro(name)
+defWord macro(name)
         HEADER(name,0)
 mend
 
-defIMMWORD macro(name)
-        HEADER(name,F_IMMED)
+defWordFl macro(name,flags)
+        HEADER(name,flags)
 mend
 
 push16  macro(name)
@@ -192,12 +192,12 @@ parse_buffer equ .
 org . + 80
 
 ; DROP ( x -- )
-defCODE("DROP")
+defCode("DROP")
 _DROP   pop af
         jNEXT()
 
 ; SWAP ( x1 x2 -- x2 x1 )
-defCODE("SWAP")
+defCode("SWAP")
 _SWAP   pop af
         pop bc
         push af
@@ -205,14 +205,14 @@ _SWAP   pop af
         jNEXT()
 
 ; DUP ( x -- x x )
-defCODE("DUP")
+defCode("DUP")
 _DUP    pop af
         push af
         push af
         jNEXT()
 
 ; OVER ( x1 x2 -- x1 x2 x1 )
-defCODE("OVER")
+defCode("OVER")
 _OVER   pop af
         pop bc
         push bc
@@ -221,7 +221,7 @@ _OVER   pop af
         jNEXT()
 
 ; ROT ( x1 x2 x3 -- x2 x3 x1 )
-defCODE("ROT")
+defCode("ROT")
 _ROT    pop af
         pop bc
         pop de
@@ -231,7 +231,7 @@ _ROT    pop af
         jNEXT()
 
 ; -ROT ( x1 x2 x3 -- x3 x1 x2 )
-defCODE("-ROT")
+defCode("-ROT")
 _NROT   pop af
         pop bc
         pop de
@@ -241,13 +241,13 @@ _NROT   pop af
         jNEXT()
 
  ; 2DROP ( x1 x2 -- )
-defCODE("2DROP")
+defCode("2DROP")
 _2DROP  pop af
         pop af
         jNEXT()
 
 ; 2SWAP ( x1 x2 x3 x4 -- x3 x4 x1 x2 )
-defCODE("2SWAP")
+defCode("2SWAP")
 _2SWAP  pop af
         pop bc
         pop de
@@ -259,7 +259,7 @@ _2SWAP  pop af
         jNEXT()
 
 ; ?DUP ( x -- x x | 0 )
-defCODE("?DUP")
+defCode("?DUP")
 _QDUP   pop bc
         push bc
         ld a,b
@@ -269,21 +269,21 @@ _QDUP   pop bc
 _QDUPx  jNEXT()
 
 ; 1+ ( x -- x+1 )
-defCODE("1+")
+defCode("1+")
 _INCR   pop bc
         inc bc
         push bc
         jNEXT()
 
 ; 1- ( x -- x-1 )
-defCODE("1-")
+defCode("1-")
 _DECR   pop bc
         dec bc
         push bc
         jNEXT()
 
 ; CELL+ ( x -- x+2 )
-defCODE("CELL+")
+defCode("CELL+")
 _CELLP  pop bc
         inc bc
         inc bc
@@ -291,7 +291,7 @@ _CELLP  pop bc
         jNEXT()
 
 ; CELL- ( x -- x-2 )
-defCODE("CELL-")
+defCode("CELL-")
 _CELLM  pop bc
         dec bc
         dec bc
@@ -299,7 +299,7 @@ _CELLM  pop bc
         jNEXT()
 
 ; 2* ( x -- x<<1 )
-defCODE("2*")
+defCode("2*")
 _SHIFTL pop hl
         sla l
         rl h
@@ -307,7 +307,7 @@ _SHIFTL pop hl
         jNEXT()
 
 ; 2/ ( x -- x>>1 )
-defCODE("2/")
+defCode("2/")
 _SHIFTR pop hl
         sra h
         rr l
@@ -315,7 +315,7 @@ _SHIFTR pop hl
         jNEXT()
 
 ; + ( x1 x2 -- x1+x2 )
-defCODE("+")
+defCode("+")
 _ADD    pop hl
         pop bc
         add hl,bc
@@ -323,7 +323,7 @@ _ADD    pop hl
         jNEXT()
 
 ; - ( x1 x2 -- x1-x2 )
-defCODE("-")
+defCode("-")
 _SUB    pop de
         pop hl
         clearCarry()
@@ -333,7 +333,7 @@ _SUB    pop de
 
 ; thanks to http://map.grauw.nl/articles/mult_div_shifts.php
 ; * ( x1 x2 -- x1*x2 )
-defCODE("*")
+defCode("*")
 _MUL    pop bc
         pop de
         ld hl,0
@@ -350,7 +350,7 @@ _MUL_NA djnz _MUL_L
 
 ; thanks to https://wikiti.brandonw.net/index.php?title=Z80_Routines:Math:Division
 ; /MOD ( x1 x2 -- x1%x2 x1/x2 )
-defCODE("/MOD")
+defCode("/MOD")
 _DIVMOD pop de          ; divisor in de
         pop bc
         ld a,b          ; dividend in ac
@@ -371,7 +371,7 @@ _DIVM_J djnz _DIVM_L
 
 ; thanks to http://z80-heaven.wikidot.com/optimization
 ; = ( x1 x2 -- x1=x2 )
-defCODE("=")
+defCode("=")
 _EQ     pop bc
         pop hl
         ld de,0
@@ -384,7 +384,7 @@ _EQx    push de
         jNEXT()
 
 ; <> ( x1 x2 -- x1!=x2 )
-defCODE("<>")
+defCode("<>")
 _NEQ    pop bc
         pop hl
         ld de,0
@@ -397,7 +397,7 @@ _NEQx   push de
         jNEXT()
 
 ; < ( x1 x2 -- x1<x2 )
-defCODE("<")
+defCode("<")
 _LT     pop bc
         pop hl
         ld de,0
@@ -409,7 +409,7 @@ _LTx    push de
         jNEXT()
 
 ; > ( x1 x2 -- x1>x2 )
-defCODE(">")
+defCode(">")
 _GT     pop hl
         pop bc
         ld de,0
@@ -421,7 +421,7 @@ _GTx    push de
         jNEXT()
 
 ; <= ( x1 x2 -- x1<=x2 )
-defCODE("<=")
+defCode("<=")
 _LTE    pop hl
         pop bc
         ld de,0
@@ -433,7 +433,7 @@ _LTEx   push de
         jNEXT()
 
 ; >= ( x1 x2 -- x1>=x2 )
-defCODE(">=")
+defCode(">=")
 _GTE    pop bc
         pop hl
         ld de,0
@@ -445,7 +445,7 @@ _GTEx   push de
         jNEXT()
 
 ; 0= ( x -- flag )
-defCODE("0=")
+defCode("0=")
 _ZEQ    pop hl
         ld de,0
         ld a,h
@@ -456,7 +456,7 @@ _ZEQx   push de
         jNEXT()
 
 ; 0<> ( x -- flag )
-defCODE("0<>")
+defCode("0<>")
 _ZNEQ   pop hl
         ld de,0
         ld a,h
@@ -467,7 +467,7 @@ _ZNEQx  push de
         jNEXT()
 
 ; AND ( x1 x2 -- x1&x2 )
-defCODE("AND")
+defCode("AND")
 _AND    pop bc
         pop de
         ld a,b
@@ -480,7 +480,7 @@ _AND    pop bc
         jNEXT()
 
 ; OR ( x1 x2 -- x1|x2 )
-defCODE("OR")
+defCode("OR")
 _OR     pop bc
         pop de
         ld a,b
@@ -493,7 +493,7 @@ _OR     pop bc
         jNEXT()
 
 ; XOR ( x1 x2 -- x1^x2 )
-defCODE("XOR")
+defCode("XOR")
 _XOR    pop bc
         pop de
         ld a,b
@@ -506,7 +506,7 @@ _XOR    pop bc
         jNEXT()
 
 ; INVERT ( x -- ~x )
-defCODE("INVERT")
+defCode("INVERT")
 _INVERT pop bc
         ld a,b
         cpl
@@ -518,19 +518,19 @@ _INVERT pop bc
         jNEXT()
 
 ; EXIT ( R: return-addr -- )
-defCODE("EXIT")
+defCode("EXIT")
 _EXIT   popRSP(b,c)
         ld ix,bc
         jNEXT()
 
 ; LIT ( -- x )
-defCODE("LIT")
+defCode("LIT")
 _LIT    lods(hl)
         push hl
         jNEXT()
 
 ; LITSTRING ( -- c-addr u )
-defCODE("LITSTRING")
+defCode("LITSTRING")
 _LITST  lods(de)
         push ix
         push de
@@ -538,7 +538,7 @@ _LITST  lods(de)
         jNEXT()
 
 ; ! ( x adr -- )
-defCODE("!")
+defCode("!")
 _STORE  pop hl
         pop bc
         ld (hl),c
@@ -547,7 +547,7 @@ _STORE  pop hl
         jNEXT()
 
 ; @ ( adr -- x )
-defCODE("@")
+defCode("@")
 _FETCH  pop hl
         ld c,(hl)
         inc hl
@@ -556,7 +556,7 @@ _FETCH  pop hl
         jNEXT()
 
 ; +! ( x adr -- )
-defCODE("+!")
+defCode("+!")
 _ADDSTO pop hl
         pop bc
         ld e,(hl)
@@ -572,7 +572,7 @@ _ADDSTO pop hl
         jNEXT()
 
 ; -! ( adr x -- )
-defCODE("-!")
+defCode("-!")
 _SUBSTO pop bc
         pop hl
         ld e,(hl)
@@ -588,14 +588,14 @@ _SUBSTO pop bc
         jNEXT()
 
 ; C! ( adr x -- )
-defCODE("C!")
+defCode("C!")
 _CSTORE pop bc
         pop hl
         ld (hl),c
         jNEXT()
 
 ; C@ ( adr -- x )
-defCODE("C@")
+defCode("C@")
 _CFETCH pop hl
         ld b,0
         ld c,(hl)
@@ -603,7 +603,7 @@ _CFETCH pop hl
         jNEXT()
 
 ; C, ( x -- )
-defCODE("C,")
+defCode("C,")
 _CCOMMA pop bc
         ld hl,(var_DP)
         ld (hl),c
@@ -612,85 +612,82 @@ _CCOMMA pop bc
         jNEXT()
 
 ; CMOVE ( src dst len -- )
-defCODE("CMOVE")
+defCode("CMOVE")
 _CMOVE  pop bc
         pop de
         pop hl
         ldir
         jNEXT()
 
-defCODE("STATE")
+defCode("STATE")
 _STATE  pushAndGo(var_STATE)
 
-defCODE("DP")
+defCode("DP")
 _DP     pushAndGo(var_DP)
 
-defWORD("HERE")
+defWord("HERE")
 cHERE   dw DOCOLON
         dw _DP-2, _FETCH-2      ; DP @
         dw _EXIT-2
 
-defWORD("SOURCE-ID")
+defWord("SOURCE-ID")
 cSRCID  dw DOCOLON
         dw _SRCID-2, _FETCH-2   ; SRC-ID @
         dw _EXIT-2
 
-defCODE("LATEST")
+defCode("LATEST")
 _LATEST pushAndGo(var_LATEST)
 
-defCODE("S0")
+defCode("S0")
 _S0     pushAndGo(var_S0)
 
-defCODE("BASE")
+defCode("BASE")
 _BASE   pushAndGo(var_BASE)
 
-defCODE("SRC")
+defCodeFl("SRC", F_HIDDEN)
 _SRC    pushAndGo(var_SRC)
 
-defCODE("SRC-ID")
+defCodeFl("SRC-ID", F_HIDDEN)
 _SRCID  pushAndGo(var_SRCID)
 
-defCODE("SRC-LEN")
+defCodeFl("SRC-LEN", F_HIDDEN)
 _SRCLEN pushAndGo(var_SRCLEN)
 
-defCODE(">IN")
+defCode(">IN")
 _SRCIN  pushAndGo(var_SRCIN)
 
-defCODE("VERSION")
+defCode("VERSION")
 _VER    pushAndGo(FORTHVER)
 
-defCODE("R0")
+defCode("R0")
 _R0     pushAndGo(rstack_top)
 
-defCODE("DOCOL")
-_DOCOL  pushAndGo(DOCOLON)
-
-defCODE("BL")
+defCode("BL")
 _BL     pushAndGo(' ')
 
-defCODE("F_IMMED")
+defCodeFl("F_IMMED", F_HIDDEN)
 _FIMM   pushAndGo(F_IMMED)
 
-defCODE("F_HIDDEN")
+defCodeFl("F_HIDDEN", F_HIDDEN)
 _FHID   pushAndGo(F_HIDDEN)
 
-defCODE("F_LENMASK")
+defCodeFl("F_LENMASK", F_HIDDEN)
 _FLEN   pushAndGo(F_LENMASK)
 
 ; >R ( x -- ) ( R: -- x )
-defCODE(">R")
+defCode(">R")
 _TOR    pop bc
         pushRSP(b,c)
         jNEXT()
 
 ; R> ( -- x ) ( R: x -- )
-defCODE("R>")
+defCode("R>")
 _FROMR  popRSP(b,c)
         push bc
         jNEXT()
 
 ; R@ ( -- x ) ( R: x -- x )
-defCODE("R@")
+defCode("R@")
 _FETCHR ld hl,(rstack)
         ld c,(hl)
         inc hl
@@ -699,19 +696,19 @@ _FETCHR ld hl,(rstack)
         jNEXT()
 
 ; RSP@ ( -- x )
-defCODE("RSP@")
+defCodeFl("RSP@", F_HIDDEN)
 _RSPFET ld hl,(rstack)
         push hl
         jNEXT()
 
 ; RSP! ( x -- )
-defCODE("RSP!")
+defCodeFl("RSP!", F_HIDDEN)
 _RSPSTO pop hl
         ld (rstack),hl
         jNEXT()
 
 ; RDROP ( R: x -- )
-defCODE("RDROP")
+defCode("RDROP")
 _RDROP  ld hl,(rstack)
         inc hl
         inc hl
@@ -719,14 +716,14 @@ _RDROP  ld hl,(rstack)
         jNEXT()
 
 ; DSP@ ( -- x )
-defCODE("DSP@")
+defCodeFl("DSP@", F_HIDDEN)
 _DSPFET ld hl,0
         add hl,sp
         push hl
         jNEXT()
 
 ; DSP! ( x -- )
-defCODE("DSP!")
+defCodeFl("DSP!", F_HIDDEN)
 _DSPSTO pop hl
         ld sp,hl
         jNEXT()
@@ -734,21 +731,21 @@ _DSPSTO pop hl
 ; WARN: uses spectrum internals
 ;   not checked on TS2068
 ; EMIT ( x -- )
-defCODE("EMIT")
+defCode("EMIT")
 _EMIT   pop bc
         ld a,c
 _EMITa  rst $10 ; SPECTRUM!
         jNEXT()
 
 ; SPACE ( -- )
-defCODE("SPACE")
+defCode("SPACE")
 _SPACE  ld a,' '
         jr _EMITa
 
 ; WARN: uses spectrum internals
 ;   not checked on TS2068
 ; KEY ( -- x )
-defCODE("KEY")
+defCode("KEY")
 _KEY    call do_key
         push af
         jNEXT()
@@ -764,7 +761,7 @@ _gk_x   ret
 ; WARN: uses spectrum internals
 ;   not checked on TS2068
 ; KEY? ( -- x | 0 )
-defCODE("KEY?")
+defCode("KEY?")
 _KEYQ   ld hl,SpectrumLastKey
         ld c,(hl)       ; get key (if any)
         ld (hl),0       ; clear last key
@@ -773,7 +770,7 @@ _KEYQ   ld hl,SpectrumLastKey
         jNEXT()
 
 ; WORD ( -- adr len )
-defCODE("WORD")
+defCode("WORD")
 _WORD   call do_word
         push de
         push bc
@@ -816,7 +813,7 @@ _word_refill:
         jr do_word
 
 ; NUMBER ( adr len -- x result )
-defCODE("NUMBER")
+defCode("NUMBER")
 _NUMBER pop bc ; len
         pop de ; addr
         call do_number
@@ -924,7 +921,7 @@ _number_exit:
         ret
 
 ; FIND ( adr len -- x )
-defCODE("FIND")
+defCode("FIND")
 _FIND:  pop bc  ; length
         pop de  ; address
         call do_find
@@ -979,7 +976,7 @@ _not_found:
         ret
 
 ; >CFA ( xt -- x )
-defCODE(">CFA")
+defCode(">CFA")
 _TCFA   pop hl
         call do_tcfa
         push hl
@@ -996,7 +993,7 @@ do_tcfa:
         ret
 
 ; >BODY ( xt -- x )
-defWORD(">BODY")
+defWord(">BODY")
 cTBODY  dw DOCOLON
         dw _TCFA-2
         dw _CELLP-2
@@ -1011,14 +1008,14 @@ write_bytes:
         ret
 
 ; S, ( adr len -- )
-defCODE("S,")
+defCode("S,")
 _SCOMMA pop bc
         pop hl
         call write_bytes
         jNEXT()
 
 ; HEADER, ( adr len -- )
-defCODE("HEADER,")
+defCodeFl("HEADER,", F_HIDDEN)
 _HEADERCOMMA:
         ld de,(var_DP)          ; de = HERE
         push de
@@ -1042,14 +1039,14 @@ DOCREATE:
         jNEXT()
 
 ; CREATE ( "<spaces>name" -- )
-defWORD("CREATE")
+defWord("CREATE")
 cCREATE dw DOCOLON
         dw _WORD-2                              ; WORD ( adr len -- )
         dw _HEADERCOMMA-2                       ; HEADER ( -- )
         postpone(DOCREATE)                      ; POSTPONE (CREATE)
         dw _EXIT-2
 
-defIMMWORD("DOES>")
+defWordFl("DOES>", F_IMMED)
 cDOES   dw DOCOLON
         ; fix the CFA of the last defined word
         postpone(_LIT-2)                        ; POSTPONE LIT
@@ -1068,7 +1065,7 @@ cDOES   dw DOCOLON
         dw _EXIT-2
 
 ; , ( x -- )
-defCODE(",")
+defCode(",")
 _COMMA  pop bc
         call do_comma
         jNEXT()
@@ -1082,19 +1079,19 @@ do_comma:
         ret
 
 ; [ ( -- )
-defIMMCODE("[")
+defCodeFl("[", F_IMMED)
 _LBRAC  clearA()
         ld (var_STATE),a
         jNEXT()
 
 ; ] ( -- )
-defCODE("]")
+defCode("]")
 _RBRAC  ld a,1
         ld (var_STATE),a
         jNEXT()
 
 ; : ( C: "<spaces>name" -- )
-defWORD(":")
+defWord(":")
 cCOLON  dw DOCOLON
         dw _WORD-2                              ; WORD
         dw _HEADERCOMMA-2                       ; HEADER,
@@ -1104,7 +1101,7 @@ cCOLON  dw DOCOLON
         dw _EXIT-2
 
 ; ; ( C: -- )
-defIMMWORD(";")
+defWordFl(";", F_IMMED)
 cSEMIC  dw DOCOLON
         postpone(_EXIT-2)                       ; POSTPONE EXIT
         dw _LATEST-2, _FETCH-2, _HIDDEN-2       ; LATEST @ HIDDEN
@@ -1112,7 +1109,7 @@ cSEMIC  dw DOCOLON
         dw _EXIT-2
 
 ; IMMEDIATE ( -- ) \ make latest word immediate
-defIMMCODE("IMMEDIATE")
+defCodeFl("IMMEDIATE", F_IMMED)
 _IMMED  ld hl,(var_LATEST)
         inc hl
         inc hl
@@ -1122,7 +1119,7 @@ _IMMED  ld hl,(var_LATEST)
         jNEXT()
 
 ; HIDDEN ( adr -- ) \ toggle hidden bit
-defCODE("HIDDEN")
+defCode("HIDDEN")
 _HIDDEN pop hl
         inc hl
         inc hl  ; 2 bytes for link
@@ -1132,7 +1129,7 @@ _HIDDEN pop hl
         jNEXT()
 
 ; HIDE ( "<spaces>name" -- )
-defWORD("HIDE")
+defWord("HIDE")
 cHIDE   dw DOCOLON
         dw _WORD-2
         dw _FIND-2
@@ -1140,19 +1137,19 @@ cHIDE   dw DOCOLON
         dw _EXIT-2
 
 ; ' ( -- x )
-defCODE("'")
+defCode("'")
 _TICK   lods(hl)
         push hl
         jNEXT()
 
 ; BRANCH ( -- )
-defCODE("BRANCH")
+defCode("BRANCH")
 _BRANCH lods(de)
         add ix,de
         jNEXT()
 
 ; 0BRANCH ( flag -- )
-defCODE("0BRANCH")
+defCode("0BRANCH")
 _ZBRAN  pop bc
         ld a,b
         or c
@@ -1164,14 +1161,14 @@ _ZBRAN  pop bc
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
 ; TYPE ( adr len -- )
-defCODE("TYPE")
+defCode("TYPE")
 _TYPE   pop bc
         pop de
         call SpectrumShowString
         jNEXT()
 
 ; EXECUTE ( xt -- )
-defCODE("EXECUTE")
+defCode("EXECUTE")
 _EXEC   pop hl
         ; TODO: shouldn't this affect RSP?
         jp (hl)
@@ -1179,7 +1176,7 @@ _EXEC   pop hl
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
 ; REFILL ( -- flag )
-defCODE("REFILL")
+defCode("REFILL")
 _REFILL:
         call do_refill
         push de
@@ -1233,7 +1230,7 @@ _REFILL_loopend:
         ret
 
 ; INTERPRET ( -- )
-defCODE("INTERPRET")
+defCode("INTERPRET")
 _INTERP call do_word
         clearA()
         ld (interp_lit),a
@@ -1302,7 +1299,7 @@ _error:
 ;   not checked on TS2068
 ;   also doesn't obey BASE
 ; . ( x -- )
-defCODE(".")
+defCode(".")
 _NUMSH  pop bc
         call SpectrumShowNumber
         ld a,' '
@@ -1310,7 +1307,7 @@ _NUMSH  pop bc
         jNEXT()
 
 ; PARSE ( char "ccc<char>" -- c-addr u )
-defCODE("PARSE")
+defCode("PARSE")
 _PARSE: pop bc
         ld a,c  ; a = char
         ld hl,(var_SRC)
@@ -1338,7 +1335,7 @@ _PARSE: pop bc
         jNEXT()
 
 ; .( ( "ccc<paren>" -- )
-defWORD(".(")
+defWord(".(")
 cDOTPAR dw DOCOLON
         lit(')')                                ; [ CHAR ) ]
         dw _PARSE-2, _TYPE-2                    ; PARSE TYPE
@@ -1370,7 +1367,7 @@ cSQUOTE dw DOCOLON
         dw _EXIT-2
 
 ; DEPTH ( -- x )
-defCODE("DEPTH")
+defCode("DEPTH")
 _DEPTH  clearCarry()
         ld hl,(var_S0)
         sbc hl,sp
@@ -1380,7 +1377,7 @@ _DEPTH  clearCarry()
         jNEXT()
 
 ; SAVE-INPUT ( -- input-spec )
-defWORD("SAVE-INPUT")
+defWord("SAVE-INPUT")
 cSAVEIN dw DOCOLON
         dw _SRCLEN-2, _FETCH-2                  ; SRC-LEN @
         dw _SRC-2, _FETCH-2                     ; SRC @
@@ -1389,7 +1386,7 @@ cSAVEIN dw DOCOLON
         dw _EXIT-2
 
 ; RESTORE-INPUT ( input-spec -- )
-defWORD("RESTORE-INPUT")
+defWord("RESTORE-INPUT")
 cRESTIN dw DOCOLON
         dw _SRCIN-2, _STORE-2                   ; >IN !
         dw _SRCID-2, _STORE-2                   ; SRC-ID !
@@ -1397,7 +1394,7 @@ cRESTIN dw DOCOLON
         dw _SRCLEN-2, _STORE-2                  ; SRC-LEN !
         dw _EXIT-2
 
-defWORD("INTERPRET-LOOP")
+defWordFl("INTERPRET-LOOP", F_HIDDEN)
 cINLOOP dw DOCOLON
                                         ; BEGIN
         dw _INTERP-2                    ; INTERPRET
@@ -1407,7 +1404,7 @@ cINLOOP dw DOCOLON
         dw _EXIT-2
 
 ; QUIT ( -- )
-defWORD("QUIT")
+defWord("QUIT")
 cQUIT   dw DOCOLON
         dw _R0-2, _RSPSTO-2             ; R0 RSP!
         setVar(_SRCID, 0)               ; 0 SRC-ID !
@@ -1421,7 +1418,7 @@ cQUIT   dw DOCOLON
         ; don't need EXIT
 
 ; EVALUATE ( * c-addr u -- * )
-defWORD("EVALUATE")
+defWord("EVALUATE")
 cEVAL   dw DOCOLON
 
         dw _SRCLEN-2, _FETCH-2, _TOR-2          ; SRC-LEN @ >R
@@ -1445,33 +1442,39 @@ cEVAL   dw DOCOLON
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
 ; WORDS ( -- )
-defCODE("WORDS")
+defCode("WORDS")
 _WORDS  ld hl,(var_LATEST)
-_wloop: push hl
+_words_loop:
+        push hl
         inc hl
         inc hl  ; skip link for now
         ld b,0
+        ld a,(hl)
+        and F_HIDDEN
+        jr nz,_words_skip
         ld a,(hl)
         and F_LENMASK
         ld c,a
         inc hl
         ld de,hl
         call SpectrumShowString ; print it out
+        ld a,' '
+        rst $10 ; SPECTRUM
+_words_skip:
         pop hl
         ld e,(hl)
         ld a,e
         inc hl
         or (hl)
-        jr z,_wexit
+        jr z,_words_exit
         ld d,(hl)
         ld hl,de
-        ld a,' '
-        rst $10 ; SPECTRUM
-        jr _wloop
-_wexit: jNEXT()
+        jr _words_loop
+_words_exit:
+        jNEXT()
 
 ; RAND ( -- x )
-defCODE("RAND")
+defCode("RAND")
 _RAND   ld a,r
         push af ; pretty random :)
         jNEXT()
@@ -1479,7 +1482,7 @@ _RAND   ld a,r
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
 ; AT ( y x -- )
-defCODE("AT")
+defCode("AT")
 _AT     ld a,chAT
         rst $10
         pop de
@@ -1492,7 +1495,7 @@ _AT     ld a,chAT
 
 ; WARN: not checked on TS2068
 ; SETCOLOUR ( x -- )
-defCODE("COLOUR")
+defCode("COLOUR")
 _SETCOL pop bc
         ld a,c
         ld (SpectrumScreenColour),a
@@ -1501,7 +1504,7 @@ _SETCOL pop bc
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
 ; SETBORDER ( x -- )
-defCODE("BORDER")
+defCode("BORDER")
 _SETBOR pop bc
         ld a,c
         call SpectrumSetBorder
@@ -1510,7 +1513,7 @@ _SETBOR pop bc
 ; WARN: uses spectrum internal function
 ;   not checked on TS2068
 ; CLS ( -- )
-defCODE("CLS")
+defCode("CLS")
 _CLS    call SpectrumClearScreen
         jNEXT()
 
