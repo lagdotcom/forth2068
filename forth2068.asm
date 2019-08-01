@@ -32,7 +32,6 @@ chAT            equ 22
 ; lenflags: 1 byte (len up to 0x1f)
 ; name: N bytes
 ; code pointer: 2 bytes (or N bytes if defined in asm)
-; data pointer: 2 bytes (or 0 bytes if asm/colon word)
 ; data field: N bytes
 ; definition: N bytes
 
@@ -907,7 +906,7 @@ _not_found:
         scf
         ret
 
-; >CFA ( x -- x )
+; >CFA ( xt -- x )
 defCODE(">CFA")
 _TCFA   pop hl
         call do_tcfa
@@ -924,7 +923,7 @@ do_tcfa:
         add hl,bc       ; skip name
         ret
 
-; >BODY ( x -- x )
+; >BODY ( xt -- x )
 defWORD(">BODY")
 cTBODY  dw DOCOLON
         dw _TCFA-2
@@ -950,15 +949,9 @@ _HEADERCOMMA:
         ld (var_DP),de
         jNEXT()
 
-; (CREATE) ( -- adr )
-defCODE("(CREATE)")
 DOCREATE:
         ; at this point, DE is already pointing at the dfa!
-        ex de,hl
-        ld c,(hl)
-        inc hl
-        ld b,(hl)
-        push bc
+        push de
         jNEXT()
 
 ; CREATE ( "<spaces>name" -- )
@@ -966,8 +959,18 @@ defWORD("CREATE")
 cCREATE dw DOCOLON
         dw _WORD-2                              ; WORD ( adr len -- )
         dw _HEADERCOMMA-2                       ; HEADER ( -- )
-        dw _LIT-2, DOCREATE, _COMMA-2          ; POSTPONE (CREATE)     \ cfa
-        dw cHERE, _CELLP-2, _COMMA-2            ; HERE CELL+ ,          \ dfa
+        dw _LIT-2, DOCREATE, _COMMA-2           ; POSTPONE (CREATE)
+        dw _EXIT-2
+
+defIMMWORD("DOES>")
+cDOES   dw DOCOLON
+        dw _LIT-2, _LIT-2, _COMMA-2             ; POSTPONE LIT
+        dw cHERE, _LIT-2, 10, _ADD-2, _COMMA-2  ; HERE 10 + ,
+        dw _LIT-2, _LATEST-2, _COMMA-2          ; POSTPONE LATEST
+        dw _LIT-2, _TCFA-2, _COMMA-2            ; POSTPONE >CFA
+        dw _LIT-2, _STORE-2, _COMMA-2           ; POSTPONE !
+        dw _LIT-2, _EXIT-2, _COMMA-2            ; POSTPONE EXIT
+        ; TODO: postpone ASM to push dfa and call DOCOLON
         dw _EXIT-2
 
 ; , ( x -- )
